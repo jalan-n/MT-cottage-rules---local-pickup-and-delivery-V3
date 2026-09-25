@@ -18,3 +18,4 @@ View your app in AI Studio: https://ai.studio/apps/7d73da45-11d1-433c-a028-43689
 2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
 3. Run the app:
    `npm run dev`
+# MT-cottage-rules---local-pickup-and-delivery-V3
