@@ -1,0 +1,86 @@
+{
+    "generated_at": "2026-09-25T01:59:51+02:00",
+    "total_pages": 16,
+    "files": [
+        {
+            "file": "index.html",
+            "bytes": 23004,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "shop.html",
+            "bytes": 16405,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "product-huckleberry.html",
+            "bytes": 19912,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "product-flathead-cherry.html",
+            "bytes": 19876,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "product-pineapple-toasted-coconut.html",
+            "bytes": 19983,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "product-raspberry.html",
+            "bytes": 19577,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "product-rhubarb-huckleberry.html",
+            "bytes": 19985,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "product-strawberry-vanilla-bean.html",
+            "bytes": 19828,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "packs.html",
+            "bytes": 16174,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "gift-box.html",
+            "bytes": 17296,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "custom-orders.html",
+            "bytes": 18331,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "contact.html",
+            "bytes": 17284,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "cart.html",
+            "bytes": 14720,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "checkout.html",
+            "bytes": 20998,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "sitemap.xml",
+            "bytes": 2263,
+            "generated_at": "2026-09-25 01:59:51"
+        },
+        {
+            "file": "robots.txt",
+            "bytes": 61,
+            "generated_at": "2026-09-25 01:59:51"
+        }
+    ]
+}

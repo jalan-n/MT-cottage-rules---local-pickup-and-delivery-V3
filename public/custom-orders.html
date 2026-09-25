@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="">
+  <title>Custom Orders &amp; Special Events | Shelly&#039;s Jellys</title>
+  <meta name="description" content="Tiered volume pricing for wedding favors, client appreciation, and special events. Inquire today.">
+  <link rel="canonical" href="./custom-orders.html">
+
+  <!-- OpenGraph / Social Meta Tags -->
+  <meta property="og:site_name" content="Shelly&#039;s Jellys">
+  <meta property="og:title" content="Custom Orders &amp; Special Events | Shelly&#039;s Jellys">
+  <meta property="og:description" content="Tiered volume pricing for wedding favors, client appreciation, and special events. Inquire today.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="./custom-orders.html">
+  <meta property="og:image" content="/assets/images/jam-jar-hero.svg">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Custom Orders & Special Events | Shelly's Jellys">
+  <meta name="twitter:description" content="Tiered volume pricing for wedding favors, client appreciation, and special events. Inquire today.">
+  <meta name="twitter:image" content="/assets/images/jam-jar-hero.svg">
+
+  <!-- LocalBusiness Schema JSON-LD -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"LocalBusiness","name":"Shelly\u0027s Jellys","image":"/assets/images/jam-jar-hero.svg","telephone":"(406) 555-0192","email":"mtshellysjellys@gmail.com","address":{"@type":"PostalAddress","streetAddress":"458 Orchard Vista Way","addressLocality":"Kalispell","addressRegion":"MT","postalCode":"59901","addressCountry":"US"},"openingHours":"Tu-Sa 10:00-18:00","priceRange":"$$"}  </script>
+
+  <script>
+    window.SJ_PRODUCT_CATALOG = [{"name":"Huckleberry","slug":"huckleberry","description":"Huckleberries just like you wished them to be. Great on toast and with cream cheese!","image":"/SJ-cottage-food/public/images/shellysjellys-new-huckleberry-wleaf3-png4-49802a46f651.png","price":"$9.00 - $17.00"},{"name":"Flathead Cherry","slug":"flathead-cherry","description":"Flathead cherries from the Flathead valley. Not too strong, not too weak.","image":"/SJ-cottage-food/public/images/flatheadcherry-slider-926920bf3232.png","price":"$9.00 - $17.00"},{"name":"Pineapple Toasted Coconut","slug":"pineapple-toasted-coconut","description":"A little bit of vacation in a jar. Good on grilled chicken too!","image":"/SJ-cottage-food/public/images/ptc-slider-b38888172f50.png","price":"$9.00 - $17.00"},{"name":"Raspberry","slug":"raspberry","description":"A mellow garden soft treat for anytime.","image":"/SJ-cottage-food/public/images/raspberry-slider-1f4329f29ba1.png","price":"$9.00 - $17.00"},{"name":"Rhubarb Huckleberry","slug":"rhubarb-huckleberry","description":"Rhubarb adds an extra tangy kick... much like grandma\u0027s homemade Rhubarb pie.","image":"/SJ-cottage-food/public/images/rhubarhuck-slider-b63891f53b73.png","price":"$9.00 - $17.00"},{"name":"Strawberry Vanilla Bean","slug":"strawberry-vanilla-bean","description":"Strawberry jam but more sophisticated.","image":"/SJ-cottage-food/public/images/svb-slider2-1a5cbd173582.png","price":"$9.00 - $17.00"}];
+  </script>
+
+  <!-- Google Fonts: Caveat for cursive brand mark, Outfit for friendly geometric headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Layout & Responsive Stylesheet -->
+  <link rel="stylesheet" href="/SJ-cottage-food/public/css/styles.css">
+
+  <!-- Square Web Payments SDK (Sandbox / Production) -->
+  <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+</head>
+<body>
+  <!-- Top Dismissible Promotional Announcement Bar -->
+      <aside id="promo-announcement-bar" class="site-banner promo-burgundy-bar" aria-label="Announcement">
+      <div class="banner-inner">
+        <span class="banner-text">Fresh small-batch seasonal harvest ready! Free local delivery on orders $55+ in the Flathead Valley.</span>
+        <a href="/SJ-cottage-food/public/shop.html" class="pill-btn-deal">View deal</a>
+        <button type="button" id="dismiss-promo-btn" class="banner-dismiss" aria-label="Dismiss Announcement">&times;</button>
+      </div>
+    </aside>
+  
+  <!-- Golden Brand Header -->
+  <header class="site-header golden-header">
+    <div class="header-container">
+      <!-- Mobile Hamburger Toggle -->
+      <button type="button" id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+
+      <!-- Logo -->
+      <div class="brand-logo-area">
+        <a href="/SJ-cottage-food/public/index.html" class="brand-logo-link" title="Shelly's Jellys Home">
+          <img src="/SJ-cottage-food/public/assets/images/shellys-jellys-logo.svg" alt="Shelly's Jellys LLC" class="brand-logo-img" width="180" height="58">
+        </a>
+      </div>
+
+      <!-- Live Keyword Search Bar -->
+      <div class="header-search-area">
+        <form id="header-search-form" class="search-form-control" role="search">
+          <label for="header-search-input" class="sr-only">Search handcrafted jam flavors</label>
+          <input type="search" id="header-search-input" placeholder="Search handcrafted jam flavors..." autocomplete="off">
+          <button type="submit" class="search-submit-btn" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+        </form>
+        <!-- Dropdown container for live search results -->
+        <div id="live-search-results" class="live-search-dropdown" style="display:none;" role="region" aria-live="polite"></div>
+      </div>
+
+      <!-- Dynamic Cart Basket Icon -->
+      <div class="header-cart-area">
+        <a href="/SJ-cottage-food/public/cart.html" id="cart-header-link" class="basket-pill-link" aria-label="View Shopping Basket">
+          <span class="basket-label">Basket</span>
+          <span id="header-cart-count" class="basket-count-badge">0</span>
+        </a>
+        <button type="button" id="cart-toggle-btn" class="drawer-trigger-btn" aria-label="Open Cart Drawer" title="Open Slide-over Drawer">
+          &#128722;
+        </button>
+      </div>
+    </div>
+
+    <!-- Smooth Horizontal Touch-Slider Navigation Bar -->
+    <nav id="site-nav-bar" class="site-navigation-bar" aria-label="Primary Navigation">
+      <div class="nav-scroll-container">
+        <ul class="nav-links-list">
+          <li><a href="/SJ-cottage-food/public/shop.html" class="">Shop all flavors</a></li>
+          <li><a href="/SJ-cottage-food/public/packs.html" class="">Build a Pack</a></li>
+          <li><a href="/SJ-cottage-food/public/gift-box.html" class="">Build a Gift Box</a></li>
+          <li><a href="/SJ-cottage-food/public/custom-orders.html" class="">Special Orders</a></li>
+          <li><a href="/SJ-cottage-food/public/contact.html" class="">Contact Us</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content" class="page-container">
+<section class="special-orders-header text-center">
+  <h1 class="special-orders-title">Custom Orders & Special Events</h1>
+  <p class="special-orders-subtitle">Whether celebrating a wedding, expressing client appreciation,<br>or stocking private-label pantry jars, our homemade jams won't dissapoint.</p>
+</section>
+
+<!-- Tiered Volume Pricing Section -->
+<section class="volume-pricing-section" aria-label="Tiered Volume Discounts">
+  <h2 class="volume-pricing-heading text-center">Tiered Volume Pricing</h2>
+  <div class="tiered-pricing-grid">
+    <div class="tier-card">
+      <div class="tier-count">48 - 84 jars</div>
+      <div class="tier-discount">10% OFF</div>
+    </div>
+    <div class="tier-card">
+      <div class="tier-count">85 - 168 jars</div>
+      <div class="tier-discount">12% OFF</div>
+    </div>
+    <div class="tier-card">
+      <div class="tier-count">169 - 252 jars</div>
+      <div class="tier-discount">15% OFF</div>
+    </div>
+  </div>
+</section>
+
+<!-- Custom Order Quote Form Section -->
+<section class="quote-request-section" aria-label="Request a custom order quote">
+  <div class="quote-intro text-center">
+    <h2 class="quote-heading">Request a custom order quote</h2>
+    <p class="quote-desc">Tell us about your event and desired flavors. Our kitchen team will respond within 24 business hours with pricing and sample options.</p>
+  </div>
+
+  <div class="mustard-form-wrapper">
+    <div id="custom-order-status" class="form-status-alert" style="display:none;" role="status"></div>
+
+    <form id="custom-order-form" class="mustard-custom-form" novalidate>
+      <input type="hidden" name="inquiry_type" value="custom_event">
+      <input type="hidden" name="csrf_token" value="f9c03bb449230d0cc712be8ffc55accf">
+      <!-- Honeypot anti-spam -->
+      <div style="display:none;" aria-hidden="true">
+        <label for="co_hp">Leave this empty</label>
+        <input type="text" id="co_hp" name="website_url_hp" tabindex="-1" autocomplete="off">
+      </div>
+
+      <!-- Row 1: Full Name, Email Address, Phone Number -->
+      <div class="mustard-form-row three-col">
+        <div class="form-field-group">
+          <label for="co_full_name">*Full Name</label>
+          <input type="text" id="co_full_name" name="full_name" required autocomplete="name">
+        </div>
+        <div class="form-field-group">
+          <label for="co_email">*Email Address</label>
+          <input type="email" id="co_email" name="email" required autocomplete="email">
+        </div>
+        <div class="form-field-group">
+          <label for="co_phone">* Phone Number</label>
+          <input type="tel" id="co_phone" name="phone" required autocomplete="tel">
+        </div>
+      </div>
+
+      <!-- Row 2: Street Address, City -->
+      <div class="mustard-form-row two-col">
+        <div class="form-field-group">
+          <label for="co_street">* Street Address</label>
+          <input type="text" id="co_street" name="street_address" required autocomplete="street-address">
+        </div>
+        <div class="form-field-group">
+          <label for="co_city">*City</label>
+          <input type="text" id="co_city" name="city" required value="Kalispell">
+        </div>
+      </div>
+
+      <!-- Row 3: Estimate Quantity, Target Event Date -->
+      <div class="mustard-form-row two-col">
+        <div class="form-field-group">
+          <label for="co_quantity">*Estimate Quantity</label>
+          <select id="co_quantity" name="estimated_jars" required>
+            <option value="48 - 52 jars">48 - 52 jars</option>
+            <option value="53 - 84 jars">53 - 84 jars (10% OFF)</option>
+            <option value="85 - 168 jars">85 - 168 jars (12% OFF)</option>
+            <option value="169 - 252 jars">169 - 252 jars (15% OFF)</option>
+            <option value="253+ jars">253+ jars (Custom Corporate Tier)</option>
+          </select>
+        </div>
+        <div class="form-field-group">
+          <label for="co_date">*Target Event Date</label>
+          <input type="date" id="co_date" name="event_date" required>
+        </div>
+      </div>
+
+      <!-- Row 4: Event Details Textarea -->
+      <div class="mustard-form-row one-col">
+        <div class="form-field-group">
+          <label for="co_message">* Tell us about your event.</label>
+          <textarea id="co_message" name="message" rows="4" placeholder="--Details about your event--" required></textarea>
+        </div>
+      </div>
+
+      <!-- Submit Button Row -->
+      <div class="mustard-btn-row">
+        <button type="submit" id="co-submit-request-btn" class="btn-mustard-submit">
+          Send Custom Request
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('custom-order-form');
+  const statusEl = document.getElementById('custom-order-status');
+  const btn = document.getElementById('co-submit-request-btn');
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Sending Request...';
+      statusEl.style.display = 'none';
+
+      const payload = {
+        name: document.getElementById('co_full_name').value.trim(),
+        email: document.getElementById('co_email').value.trim(),
+        phone: document.getElementById('co_phone').value.trim(),
+        address: `${document.getElementById('co_street').value.trim()}, ${document.getElementById('co_city').value.trim()}`,
+        estimated_jars: document.getElementById('co_quantity').value,
+        event_date: document.getElementById('co_date').value,
+        message: document.getElementById('co_message').value.trim(),
+        inquiry_type: 'custom_event',
+        website_url_hp: form.querySelector('input[name="website_url_hp"]').value
+      };
+
+      try {
+        const res = await fetch('/api/contact.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          statusEl.className = 'form-status-alert success-box';
+          statusEl.textContent = 'Thank you! Your custom order request has been dispatched to our kitchen team. We will respond within 24 business hours.';
+          statusEl.style.display = 'block';
+          form.reset();
+        } else {
+          statusEl.className = 'form-status-alert error-box';
+          statusEl.textContent = data.error || 'Failed to submit quote request. Please try again.';
+          statusEl.style.display = 'block';
+        }
+      } catch (err) {
+        statusEl.className = 'form-status-alert error-box';
+        statusEl.textContent = 'Network error. Please check your connection and try again.';
+        statusEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Custom Request';
+      }
+    });
+  }
+});
+</script>
+  </main>
+
+  <!-- Slide-over Cart Drawer -->
+  <div id="cart-drawer-overlay" class="drawer-overlay" aria-hidden="true"></div>
+  <aside id="cart-drawer" class="cart-drawer" aria-label="Shopping Cart Drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <h2 class="drawer-title">&#128722; Your Basket</h2>
+      <button type="button" id="cart-drawer-close" class="drawer-close-btn" aria-label="Close basket">&times;</button>
+    </div>
+
+    <!-- Drawer Line Items List -->
+    <div id="drawer-items-list" class="drawer-body">
+      <!-- Injected dynamically by cart.js -->
+      <p class="empty-state">Your basket is currently empty.</p>
+    </div>
+
+    <!-- Drawer Footer & Actions -->
+    <div class="drawer-footer">
+      <div class="drawer-subtotal-row">
+        <span>Items Subtotal:</span>
+        <strong id="drawer-subtotal-val">$0.00</strong>
+      </div>
+      <p class="drawer-delivery-note">Taxes and local delivery fee calculated at checkout.</p>
+      <div class="drawer-buttons-row">
+        <a href="/SJ-cottage-food/public/cart.html" class="btn-secondary drawer-cart-page-btn">View Full Basket</a>
+        <a href="/SJ-cottage-food/public/checkout.html" class="btn-emerald drawer-checkout-btn">Checkout &rarr;</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-col brand-col">
+        <img src="/SJ-cottage-food/public/assets/images/shellys-jellys-logo.svg" alt="Shelly's Jellys LLC" class="footer-logo" width="160" height="52" loading="lazy">
+        <p class="footer-tagline">Homemade jam. More fruit. Less sugar. No preservatives.</p>
+        <p class="footer-subtext">Handcrafted in small batches in Kalispell, Montana. Local pickup and delivery across Flathead County.</p>
+      </div>
+
+      <div class="footer-col links-col">
+        <h3 class="footer-heading">Quick Links</h3>
+        <ul class="footer-links">
+          <li><a href="/SJ-cottage-food/public/shop.html">Shop all flavors</a></li>
+          <li><a href="/SJ-cottage-food/public/packs.html">Build a Pack</a></li>
+          <li><a href="/SJ-cottage-food/public/gift-box.html">Build a Gift Box</a></li>
+          <li><a href="/SJ-cottage-food/public/custom-orders.html">Special Orders</a></li>
+          <li><a href="/SJ-cottage-food/public/contact.html">Contact Us</a></li>
+          <li><a href="/SJ-cottage-food/public/cart.html">View Basket</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col contact-col">
+        <h3 class="footer-heading">Kitchen & Farmstand</h3>
+        <address class="footer-address">
+          The Jam Kitchen &amp; Farmstand, 458 Orchard Vista Way, Suite B, Kalispell, MT 59901<br>
+          Kalispell, MT 59901<br>
+          Phone: <a href="tel:4065550192">(406) 555-0192</a><br>
+          Email: <a href="mailto:mtshellysjellys@gmail.com">mtshellysjellys@gmail.com</a>
+        </address>
+        <div class="footer-vcard-wrap">
+          <a href="/SJ-cottage-food/public/ShellysJellyscontact.vcf" download="ShellysJellyscontact.vcf" class="vcard-link">
+            &#128100; Download vCard Contact File
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom-bar text-center">
+      <p>&copy; 2026 Shelly&#039;s Jellys. All rights reserved. Artisan Gourmet Jams &amp; Preserves.</p>
+    </div>
+  </footer>
+
+  <!-- Vanilla Scripts -->
+  <script src="/SJ-cottage-food/public/js/search.js"></script>
+  <script src="/SJ-cottage-food/public/js/cart.js"></script>
+  <script src="/SJ-cottage-food/public/js/fulfillment.js"></script>
+  </body>
+</html>

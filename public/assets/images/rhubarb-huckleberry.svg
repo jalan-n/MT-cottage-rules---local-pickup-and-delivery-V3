@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 120" width="160" height="120" aria-label="Rhubarb Huckleberry">
+  <defs>
+    <linearGradient id="rhubarbGrad" x1="0%" y1="0%" x2="100%" y2="80%">
+      <stop offset="0%" stop-color="#C2274D"/>
+      <stop offset="35%" stop-color="#9E1538"/>
+      <stop offset="70%" stop-color="#7B0B26"/>
+      <stop offset="100%" stop-color="#4F0516"/>
+    </linearGradient>
+    <linearGradient id="rhubarbCut" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#D8607E"/>
+      <stop offset="60%" stop-color="#FCE1E8"/>
+      <stop offset="100%" stop-color="#BF3B5B"/>
+    </linearGradient>
+    <radialGradient id="rhubBerry" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#553A7A"/>
+      <stop offset="60%" stop-color="#231238"/>
+      <stop offset="100%" stop-color="#0A0312"/>
+    </radialGradient>
+    <filter id="rhubShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#rhubShadow)">
+    <!-- Rhubarb stalk 1 -->
+    <path d="M 40 40 L 125 78 L 122 96 L 38 58 Z" fill="url(#rhubarbGrad)"/>
+    <!-- Rhubarb cut face -->
+    <polygon points="38,40 45,43 42,60 35,57" fill="url(#rhubarbCut)"/>
+    <!-- Ridge highlights -->
+    <line x1="42" y1="46" x2="124" y2="83" stroke="#EB6385" stroke-width="1.5" opacity="0.6"/>
+    <line x1="40" y1="52" x2="122" y2="89" stroke="#5C0C1F" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Rhubarb stalk 2 crossing -->
+    <path d="M 50 32 L 138 72 L 135 88 L 47 48 Z" fill="url(#rhubarbGrad)" opacity="0.95"/>
+    <polygon points="47,32 54,35 51,50 44,47" fill="url(#rhubarbCut)"/>
+    <line x1="52" y1="38" x2="137" y2="78" stroke="#EB6385" stroke-width="1.5" opacity="0.5"/>
+
+    <!-- Cluster of huckleberries at base -->
+    <circle cx="48" cy="68" r="14" fill="url(#rhubBerry)"/>
+    <circle cx="36" cy="78" r="13" fill="url(#rhubBerry)"/>
+    <circle cx="58" cy="80" r="15" fill="url(#rhubBerry)"/>
+    <circle cx="46" cy="88" r="12" fill="url(#rhubBerry)"/>
+    <circle cx="48" cy="65" r="3" fill="#150824" stroke="#48326D" stroke-width="1"/>
+  </g>
+</svg>

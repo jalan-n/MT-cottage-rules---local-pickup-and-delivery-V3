@@ -1,0 +1,6 @@
+{
+  "name": "Boutique Gourmet Jam E-Commerce",
+  "description": "High-performance SSG and Vanilla PHP micro-API e-commerce application for artisanal jams with local pickup and delivery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

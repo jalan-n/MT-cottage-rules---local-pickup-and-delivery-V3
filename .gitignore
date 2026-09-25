@@ -1,0 +1,22 @@
+node_modules/
+build/
+dist/
+coverage/
+.vscode/
+.idea/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.*
+!.env.example
+
+# Local runtime caches / generated artifacts that should not be committed if not needed
+php_errors.log
+.session/
+__pycache__/

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="">
+  <title>Shelly&#039;s Jellys | Handcrafted Montana Jams</title>
+  <meta name="description" content="Small-batch gourmet artisanal jams made from wild mountain berries and orchard fruit. Free local pickup &amp; delivery across the Flathead Valley.">
+  <link rel="canonical" href="./index.html">
+
+  <!-- OpenGraph / Social Meta Tags -->
+  <meta property="og:site_name" content="Shelly&#039;s Jellys">
+  <meta property="og:title" content="Shelly&#039;s Jellys | Handcrafted Montana Jams">
+  <meta property="og:description" content="Small-batch gourmet artisanal jams made from wild mountain berries and orchard fruit. Free local pickup &amp; delivery across the Flathead Valley.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="./index.html">
+  <meta property="og:image" content="/assets/images/jam-jar-hero.svg">
+
+  <!-- Twitter Cards -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Shelly's Jellys | Handcrafted Montana Jams">
+  <meta name="twitter:description" content="Small-batch gourmet artisanal jams made from wild mountain berries and orchard fruit. Free local pickup & delivery across the Flathead Valley.">
+  <meta name="twitter:image" content="/assets/images/jam-jar-hero.svg">
+
+  <!-- LocalBusiness Schema JSON-LD -->
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"LocalBusiness","name":"Shelly\u0027s Jellys","image":"/assets/images/jam-jar-hero.svg","telephone":"(406) 555-0192","email":"mtshellysjellys@gmail.com","address":{"@type":"PostalAddress","streetAddress":"458 Orchard Vista Way","addressLocality":"Kalispell","addressRegion":"MT","postalCode":"59901","addressCountry":"US"},"openingHours":"Tu-Sa 10:00-18:00","priceRange":"$$"}  </script>
+
+  <script>
+    window.SJ_PRODUCT_CATALOG = [{"name":"Huckleberry","slug":"huckleberry","description":"Huckleberries just like you wished them to be. Great on toast and with cream cheese!","image":"/SJ-cottage-food/public/images/shellysjellys-new-huckleberry-wleaf3-png4-49802a46f651.png","price":"$9.00 - $17.00"},{"name":"Flathead Cherry","slug":"flathead-cherry","description":"Flathead cherries from the Flathead valley. Not too strong, not too weak.","image":"/SJ-cottage-food/public/images/flatheadcherry-slider-926920bf3232.png","price":"$9.00 - $17.00"},{"name":"Pineapple Toasted Coconut","slug":"pineapple-toasted-coconut","description":"A little bit of vacation in a jar. Good on grilled chicken too!","image":"/SJ-cottage-food/public/images/ptc-slider-b38888172f50.png","price":"$9.00 - $17.00"},{"name":"Raspberry","slug":"raspberry","description":"A mellow garden soft treat for anytime.","image":"/SJ-cottage-food/public/images/raspberry-slider-1f4329f29ba1.png","price":"$9.00 - $17.00"},{"name":"Rhubarb Huckleberry","slug":"rhubarb-huckleberry","description":"Rhubarb adds an extra tangy kick... much like grandma\u0027s homemade Rhubarb pie.","image":"/SJ-cottage-food/public/images/rhubarhuck-slider-b63891f53b73.png","price":"$9.00 - $17.00"},{"name":"Strawberry Vanilla Bean","slug":"strawberry-vanilla-bean","description":"Strawberry jam but more sophisticated.","image":"/SJ-cottage-food/public/images/svb-slider2-1a5cbd173582.png","price":"$9.00 - $17.00"}];
+  </script>
+
+  <!-- Google Fonts: Caveat for cursive brand mark, Outfit for friendly geometric headings -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core Layout & Responsive Stylesheet -->
+  <link rel="stylesheet" href="/SJ-cottage-food/public/css/styles.css">
+
+  <!-- Square Web Payments SDK (Sandbox / Production) -->
+  <script src="https://sandbox.web.squarecdn.com/v1/square.js"></script>
+</head>
+<body>
+  <!-- Top Dismissible Promotional Announcement Bar -->
+      <aside id="promo-announcement-bar" class="site-banner promo-burgundy-bar" aria-label="Announcement">
+      <div class="banner-inner">
+        <span class="banner-text">Fresh small-batch seasonal harvest ready! Free local delivery on orders $55+ in the Flathead Valley.</span>
+        <a href="/SJ-cottage-food/public/shop.html" class="pill-btn-deal">View deal</a>
+        <button type="button" id="dismiss-promo-btn" class="banner-dismiss" aria-label="Dismiss Announcement">&times;</button>
+      </div>
+    </aside>
+  
+  <!-- Golden Brand Header -->
+  <header class="site-header golden-header">
+    <div class="header-container">
+      <!-- Mobile Hamburger Toggle -->
+      <button type="button" id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+
+      <!-- Logo -->
+      <div class="brand-logo-area">
+        <a href="/SJ-cottage-food/public/index.html" class="brand-logo-link" title="Shelly's Jellys Home">
+          <img src="/SJ-cottage-food/public/assets/images/shellys-jellys-logo.svg" alt="Shelly's Jellys LLC" class="brand-logo-img" width="180" height="58">
+        </a>
+      </div>
+
+      <!-- Live Keyword Search Bar -->
+      <div class="header-search-area">
+        <form id="header-search-form" class="search-form-control" role="search">
+          <label for="header-search-input" class="sr-only">Search handcrafted jam flavors</label>
+          <input type="search" id="header-search-input" placeholder="Search handcrafted jam flavors..." autocomplete="off">
+          <button type="submit" class="search-submit-btn" aria-label="Search">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+        </form>
+        <!-- Dropdown container for live search results -->
+        <div id="live-search-results" class="live-search-dropdown" style="display:none;" role="region" aria-live="polite"></div>
+      </div>
+
+      <!-- Dynamic Cart Basket Icon -->
+      <div class="header-cart-area">
+        <a href="/SJ-cottage-food/public/cart.html" id="cart-header-link" class="basket-pill-link" aria-label="View Shopping Basket">
+          <span class="basket-label">Basket</span>
+          <span id="header-cart-count" class="basket-count-badge">0</span>
+        </a>
+        <button type="button" id="cart-toggle-btn" class="drawer-trigger-btn" aria-label="Open Cart Drawer" title="Open Slide-over Drawer">
+          &#128722;
+        </button>
+      </div>
+    </div>
+
+    <!-- Smooth Horizontal Touch-Slider Navigation Bar -->
+    <nav id="site-nav-bar" class="site-navigation-bar" aria-label="Primary Navigation">
+      <div class="nav-scroll-container">
+        <ul class="nav-links-list">
+          <li><a href="/SJ-cottage-food/public/shop.html" class="">Shop all flavors</a></li>
+          <li><a href="/SJ-cottage-food/public/packs.html" class="">Build a Pack</a></li>
+          <li><a href="/SJ-cottage-food/public/gift-box.html" class="">Build a Gift Box</a></li>
+          <li><a href="/SJ-cottage-food/public/custom-orders.html" class="">Special Orders</a></li>
+          <li><a href="/SJ-cottage-food/public/contact.html" class="">Contact Us</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main-content" class="page-container">
+<!-- Hero Section -->
+<section class="home-hero-section" aria-label="Welcome to Shelly's Jellys">
+  <div class="hero-layout-grid">
+    <div class="hero-text-block">
+      <h1 class="hero-main-title">Homemade jam.</h1>
+      <p class="hero-tagline">More fruit. Less sugar. No preservatives.</p>
+
+      <!-- 5-Star Customer Rating Badge -->
+      <div class="hero-rating-badge" aria-label="5 out of 5 stars customer rating">
+        <div class="star-icons-row" aria-hidden="true">
+          <span class="star-gold">&#9733;</span>
+          <span class="star-gold">&#9733;</span>
+          <span class="star-gold">&#9733;</span>
+          <span class="star-gold">&#9733;</span>
+          <span class="star-gold">&#9733;</span>
+        </div>
+        <p class="rating-subtext">Consistent five star rating from our customers!</p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="hero-cta-buttons">
+        <a href="/SJ-cottage-food/public/shop.html" class="btn-emerald">Shop all jams</a>
+        <a href="/SJ-cottage-food/public/gift-box.html" class="btn-emerald">Build a Gift Box</a>
+      </div>
+    </div>
+
+    <!-- Right Side Hero Glass Mason Jar -->
+    <div class="hero-media-block">
+      <img src="/SJ-cottage-food/public/assets/images/jam-jar-hero.svg" alt="Handcrafted Mason Jar of Shelly's Jellys Gourmet Jam" class="hero-jar-graphic" width="320" height="400" loading="eager">
+    </div>
+  </div>
+</section>
+
+<!-- Full-bleed Burgundy Band with 3 Interactive Highlights -->
+<section class="burgundy-highlights-band" aria-label="Featured Offerings">
+  <div class="highlights-grid">
+    <!-- Card 1: Build a Pack -->
+    <article class="highlight-white-card">
+      <h2>Build a Pack</h2>
+      <p>build a 3 , 6 or ,12 pack<br>build a Custom pack</p>
+      <a href="/SJ-cottage-food/public/packs.html" class="btn-olive">Build a Pack</a>
+    </article>
+
+    <!-- Card 2: Build a Gift Box -->
+    <article class="highlight-white-card">
+      <h2>Build a Gift Box</h2>
+      <p>Fill a gift box with up to four 4 oz jars.</p>
+      <a href="/SJ-cottage-food/public/gift-box.html" class="btn-olive">Build a Gift Box</a>
+    </article>
+
+    <!-- Card 3: Special Orders -->
+    <article class="highlight-white-card">
+      <h2>Special Orders</h2>
+      <p>Make an order for your special events.</p>
+      <a href="/SJ-cottage-food/public/custom-orders.html" class="btn-olive">Contact us now!</a>
+    </article>
+  </div>
+</section>
+
+<!-- Touch-Swipe Horizontal Product Slider of All 6 Jams -->
+<section class="flavors-slider-section" aria-label="Our 6 Handcrafted Jam Flavors">
+  <div class="section-title-wrap">
+    <h2>Our Handcrafted Jam Flavors</h2>
+    <p>Swipe or drag to explore our small-batch valley favorites ($9.00 – $17.00).</p>
+  </div>
+
+  <div class="touch-slider-wrapper">
+    <div class="slider-track" id="flavors-slider-track" role="region" aria-label="Flavors carousel" tabindex="0">
+                              <article class="slider-flavor-card" data-product-slug="huckleberry" data-product-name="Huckleberry">
+          <div class="flavor-card-img-wrap">
+            <img src="/SJ-cottage-food/public/images/shellysjellys-new-huckleberry-wleaf3-png4-49802a46f651.png" alt="Huckleberry Fresh Fruit Preservation" width="140" height="100" loading="lazy">
+          </div>
+          <h3 class="flavor-card-name">Huckleberry</h3>
+          <div class="flavor-card-price">$9.00 &ndash; $17.00</div>
+          <span class="stock-pill in-stock">In Stock</span>
+          <a href="/SJ-cottage-food/public/product-huckleberry.html" class="btn-emerald card-btn">View flavor</a>
+        </article>
+                              <article class="slider-flavor-card" data-product-slug="flathead-cherry" data-product-name="Flathead Cherry">
+          <div class="flavor-card-img-wrap">
+            <img src="/SJ-cottage-food/public/images/flatheadcherry-slider-926920bf3232.png" alt="Flathead Cherry Fresh Fruit Preservation" width="140" height="100" loading="lazy">
+          </div>
+          <h3 class="flavor-card-name">Flathead Cherry</h3>
+          <div class="flavor-card-price">$9.00 &ndash; $17.00</div>
+          <span class="stock-pill in-stock">In Stock</span>
+          <a href="/SJ-cottage-food/public/product-flathead-cherry.html" class="btn-emerald card-btn">View flavor</a>
+        </article>
+                              <article class="slider-flavor-card" data-product-slug="pineapple-toasted-coconut" data-product-name="Pineapple Toasted Coconut">
+          <div class="flavor-card-img-wrap">
+            <img src="/SJ-cottage-food/public/images/ptc-slider-b38888172f50.png" alt="Pineapple Toasted Coconut Fresh Fruit Preservation" width="140" height="100" loading="lazy">
+          </div>
+          <h3 class="flavor-card-name">Pineapple Toasted Coconut</h3>
+          <div class="flavor-card-price">$9.00 &ndash; $17.00</div>
+          <span class="stock-pill in-stock">In Stock</span>
+          <a href="/SJ-cottage-food/public/product-pineapple-toasted-coconut.html" class="btn-emerald card-btn">View flavor</a>
+        </article>
+                              <article class="slider-flavor-card" data-product-slug="raspberry" data-product-name="Raspberry">
+          <div class="flavor-card-img-wrap">
+            <img src="/SJ-cottage-food/public/images/raspberry-slider-1f4329f29ba1.png" alt="Raspberry Fresh Fruit Preservation" width="140" height="100" loading="lazy">
+          </div>
+          <h3 class="flavor-card-name">Raspberry</h3>
+          <div class="flavor-card-price">$9.00 &ndash; $17.00</div>
+          <span class="stock-pill in-stock">In Stock</span>
+          <a href="/SJ-cottage-food/public/product-raspberry.html" class="btn-emerald card-btn">View flavor</a>
+        </article>
+                              <article class="slider-flavor-card" data-product-slug="rhubarb-huckleberry" data-product-name="Rhubarb Huckleberry">
+          <div class="flavor-card-img-wrap">
+            <img src="/SJ-cottage-food/public/images/rhubarhuck-slider-b63891f53b73.png" alt="Rhubarb Huckleberry Fresh Fruit Preservation" width="140" height="100" loading="lazy">
+          </div>
+          <h3 class="flavor-card-name">Rhubarb Huckleberry</h3>
+          <div class="flavor-card-price">$9.00 &ndash; $17.00</div>
+          <span class="stock-pill in-stock">In Stock</span>
+          <a href="/SJ-cottage-food/public/product-rhubarb-huckleberry.html" class="btn-emerald card-btn">View flavor</a>
+        </article>
+                              <article class="slider-flavor-card" data-product-slug="strawberry-vanilla-bean" data-product-name="Strawberry Vanilla Bean">
+          <div class="flavor-card-img-wrap">
+            <img src="/SJ-cottage-food/public/images/svb-slider2-1a5cbd173582.png" alt="Strawberry Vanilla Bean Fresh Fruit Preservation" width="140" height="100" loading="lazy">
+          </div>
+          <h3 class="flavor-card-name">Strawberry Vanilla Bean</h3>
+          <div class="flavor-card-price">$9.00 &ndash; $17.00</div>
+          <span class="stock-pill in-stock">In Stock</span>
+          <a href="/SJ-cottage-food/public/product-strawberry-vanilla-bean.html" class="btn-emerald card-btn">View flavor</a>
+        </article>
+          </div>
+  </div>
+</section>
+
+<!-- Customer Review Carousel -->
+<section class="reviews-section" aria-label="Customer Reviews">
+  <div class="section-title-wrap text-center">
+    <h2>Customer Reviews</h2>
+    <p>Real quotes from our Flathead Valley community and gourmet jam lovers.</p>
+  </div>
+
+  <div class="reviews-slider-wrapper">
+    <div class="reviews-track" id="reviews-slider-track">
+              <article class="review-card">
+          <div class="review-stars">
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-empty">&#9733;</span>
+                      </div>
+          <div class="review-rating-label">4 of 5 stars</div>
+          <blockquote class="review-quote">You need to try the pepper jellies... oh wait!</blockquote>
+          <div class="review-author">
+            <strong>Patty</strong>
+            <span class="verified-tag">&#10003; Verified Farmstand Buyer</span>
+          </div>
+        </article>
+              <article class="review-card">
+          <div class="review-stars">
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                      </div>
+          <div class="review-rating-label">5 of 5 stars</div>
+          <blockquote class="review-quote">Huckleberry on scrambled eggs and toast too.</blockquote>
+          <div class="review-author">
+            <strong>Ian Alan</strong>
+            <span class="verified-tag">&#10003; Verified Local Customer</span>
+          </div>
+        </article>
+              <article class="review-card">
+          <div class="review-stars">
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                      </div>
+          <div class="review-rating-label">5 of 5 stars</div>
+          <blockquote class="review-quote">Five stars from me all day long!</blockquote>
+          <div class="review-author">
+            <strong>Amanda E.</strong>
+            <span class="verified-tag">&#10003; Verified Flathead Delivery</span>
+          </div>
+        </article>
+              <article class="review-card">
+          <div class="review-stars">
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                      </div>
+          <div class="review-rating-label">5 of 5 stars</div>
+          <blockquote class="review-quote">Best artisan preserves we have ever ordered for breakfast or gifting.</blockquote>
+          <div class="review-author">
+            <strong>Marcus B.</strong>
+            <span class="verified-tag">&#10003; Verified Buyer</span>
+          </div>
+        </article>
+              <article class="review-card">
+          <div class="review-stars">
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                          <span class="star-gold">&#9733;</span>
+                      </div>
+          <div class="review-rating-label">5 of 5 stars</div>
+          <blockquote class="review-quote">The Flathead Cherry and Huckleberry combo is utterly addictive.</blockquote>
+          <div class="review-author">
+            <strong>Sarah T.</strong>
+            <span class="verified-tag">&#10003; Verified Gift Box Recipient</span>
+          </div>
+        </article>
+          </div>
+  </div>
+</section>
+  </main>
+
+  <!-- Slide-over Cart Drawer -->
+  <div id="cart-drawer-overlay" class="drawer-overlay" aria-hidden="true"></div>
+  <aside id="cart-drawer" class="cart-drawer" aria-label="Shopping Cart Drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <h2 class="drawer-title">&#128722; Your Basket</h2>
+      <button type="button" id="cart-drawer-close" class="drawer-close-btn" aria-label="Close basket">&times;</button>
+    </div>
+
+    <!-- Drawer Line Items List -->
+    <div id="drawer-items-list" class="drawer-body">
+      <!-- Injected dynamically by cart.js -->
+      <p class="empty-state">Your basket is currently empty.</p>
+    </div>
+
+    <!-- Drawer Footer & Actions -->
+    <div class="drawer-footer">
+      <div class="drawer-subtotal-row">
+        <span>Items Subtotal:</span>
+        <strong id="drawer-subtotal-val">$0.00</strong>
+      </div>
+      <p class="drawer-delivery-note">Taxes and local delivery fee calculated at checkout.</p>
+      <div class="drawer-buttons-row">
+        <a href="/SJ-cottage-food/public/cart.html" class="btn-secondary drawer-cart-page-btn">View Full Basket</a>
+        <a href="/SJ-cottage-food/public/checkout.html" class="btn-emerald drawer-checkout-btn">Checkout &rarr;</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-col brand-col">
+        <img src="/SJ-cottage-food/public/assets/images/shellys-jellys-logo.svg" alt="Shelly's Jellys LLC" class="footer-logo" width="160" height="52" loading="lazy">
+        <p class="footer-tagline">Homemade jam. More fruit. Less sugar. No preservatives.</p>
+        <p class="footer-subtext">Handcrafted in small batches in Kalispell, Montana. Local pickup and delivery across Flathead County.</p>
+      </div>
+
+      <div class="footer-col links-col">
+        <h3 class="footer-heading">Quick Links</h3>
+        <ul class="footer-links">
+          <li><a href="/SJ-cottage-food/public/shop.html">Shop all flavors</a></li>
+          <li><a href="/SJ-cottage-food/public/packs.html">Build a Pack</a></li>
+          <li><a href="/SJ-cottage-food/public/gift-box.html">Build a Gift Box</a></li>
+          <li><a href="/SJ-cottage-food/public/custom-orders.html">Special Orders</a></li>
+          <li><a href="/SJ-cottage-food/public/contact.html">Contact Us</a></li>
+          <li><a href="/SJ-cottage-food/public/cart.html">View Basket</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-col contact-col">
+        <h3 class="footer-heading">Kitchen & Farmstand</h3>
+        <address class="footer-address">
+          The Jam Kitchen &amp; Farmstand, 458 Orchard Vista Way, Suite B, Kalispell, MT 59901<br>
+          Kalispell, MT 59901<br>
+          Phone: <a href="tel:4065550192">(406) 555-0192</a><br>
+          Email: <a href="mailto:mtshellysjellys@gmail.com">mtshellysjellys@gmail.com</a>
+        </address>
+        <div class="footer-vcard-wrap">
+          <a href="/SJ-cottage-food/public/ShellysJellyscontact.vcf" download="ShellysJellyscontact.vcf" class="vcard-link">
+            &#128100; Download vCard Contact File
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom-bar text-center">
+      <p>&copy; 2026 Shelly&#039;s Jellys. All rights reserved. Artisan Gourmet Jams &amp; Preserves.</p>
+    </div>
+  </footer>
+
+  <!-- Vanilla Scripts -->
+  <script src="/SJ-cottage-food/public/js/search.js"></script>
+  <script src="/SJ-cottage-food/public/js/cart.js"></script>
+  <script src="/SJ-cottage-food/public/js/fulfillment.js"></script>
+  </body>
+</html>
