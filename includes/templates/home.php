@@ -8,30 +8,71 @@ declare(strict_types=1);
  */
 $reviews = get_customer_reviews();
 $assetBase = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/');
+$heroTitle = trim((string)($settings['hero_title'] ?? 'Homemade jam.'));
+$heroTitle = $heroTitle !== '' ? $heroTitle : 'Homemade jam.';
+$heroTagline = trim((string)($settings['hero_tagline'] ?? 'More fruit. Less sugar. No preservatives.'));
+$heroTagline = $heroTagline !== '' ? $heroTagline : 'More fruit. Less sugar. No preservatives.';
+$heroRatingVisible = ($settings['hero_rating_visible'] ?? '1') === '1';
+$heroRatingText = trim((string)($settings['hero_rating_text'] ?? 'Consistent five star rating from our customers!'));
+$heroRatingText = $heroRatingText !== '' ? $heroRatingText : 'Consistent five star rating from our customers!';
+$heroCtasRaw = json_decode((string)($settings['hero_ctas'] ?? '[]'), true);
+$heroCtas = is_array($heroCtasRaw) && $heroCtasRaw !== [] ? $heroCtasRaw : [
+    ['label' => 'Shop all jams', 'url' => './shop.html', 'visible' => true],
+    ['label' => 'Build a Gift Box', 'url' => './gift-box.html', 'visible' => true],
+];
+$heroCtas = array_values(array_filter(array_map(function ($cta) {
+    if (!is_array($cta)) {
+        return null;
+    }
+    $label = trim((string)($cta['label'] ?? ''));
+    $url = trim((string)($cta['url'] ?? './shop.html'));
+    $visible = array_key_exists('visible', $cta) ? (bool)$cta['visible'] : true;
+    if (is_string($cta['visible'] ?? null)) {
+        $visible = strtolower((string)$cta['visible']) !== 'false' && strtolower((string)$cta['visible']) !== '0';
+    }
+    if ($label === '') {
+        return null;
+    }
+    if ($url === '') {
+        $url = './shop.html';
+    }
+    return ['label' => $label, 'url' => $url, 'visible' => $visible];
+}, $heroCtas)));
+if ($heroCtas === []) {
+    $heroCtas = [
+        ['label' => 'Shop all jams', 'url' => './shop.html', 'visible' => true],
+        ['label' => 'Build a Gift Box', 'url' => './gift-box.html', 'visible' => true],
+    ];
+}
 ?>
 <!-- Hero Section -->
 <section class="home-hero-section" aria-label="Welcome to Shelly's Jellys">
   <div class="hero-layout-grid">
     <div class="hero-text-block">
-      <h1 class="hero-main-title">Homemade jam.</h1>
-      <p class="hero-tagline">More fruit. Less sugar. No preservatives.</p>
+      <h1 class="hero-main-title"><?= htmlspecialchars($heroTitle) ?></h1>
+      <p class="hero-tagline"><?= htmlspecialchars($heroTagline) ?></p>
 
-      <!-- 5-Star Customer Rating Badge -->
-      <div class="hero-rating-badge" aria-label="5 out of 5 stars customer rating">
-        <div class="star-icons-row" aria-hidden="true">
-          <span class="star-gold">&#9733;</span>
-          <span class="star-gold">&#9733;</span>
-          <span class="star-gold">&#9733;</span>
-          <span class="star-gold">&#9733;</span>
-          <span class="star-gold">&#9733;</span>
+      <?php if ($heroRatingVisible): ?>
+        <div class="hero-rating-badge" aria-label="5 out of 5 stars customer rating">
+          <div class="star-icons-row" aria-hidden="true">
+            <span class="star-gold">&#9733;</span>
+            <span class="star-gold">&#9733;</span>
+            <span class="star-gold">&#9733;</span>
+            <span class="star-gold">&#9733;</span>
+            <span class="star-gold">&#9733;</span>
+          </div>
+          <p class="rating-subtext"><?= htmlspecialchars($heroRatingText) ?></p>
         </div>
-        <p class="rating-subtext">Consistent five star rating from our customers!</p>
-      </div>
+      <?php endif; ?>
 
-      <!-- Action Buttons -->
       <div class="hero-cta-buttons">
-        <a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/shop.html" class="btn-emerald">Shop all jams</a>
-        <a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/gift-box.html" class="btn-emerald">Build a Gift Box</a>
+        <?php foreach ($heroCtas as $cta): ?>
+          <?php if (!($cta['visible'] ?? true)) continue; ?>
+          <?php $ctaHref = trim((string)($cta['url'] ?? './shop.html')); ?>
+          <?php if ($ctaHref === '') { $ctaHref = './shop.html'; } ?>
+          <?php if (!preg_match('/^(https?:)?\/\//i', $ctaHref) && !str_starts_with($ctaHref, '/')) { $ctaHref = './' . ltrim($ctaHref, './'); } ?>
+          <a href="<?= htmlspecialchars($ctaHref, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" class="btn-emerald"><?= htmlspecialchars((string)($cta['label'] ?? 'Learn more')) ?></a>
+        <?php endforeach; ?>
       </div>
     </div>
 

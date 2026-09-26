@@ -61,15 +61,44 @@ class CartEngine {
   }
 
   addItem(item, openDrawer = true) {
-    const key = this.generateItemKey(item)
+    const normalizedItem = { ...item }
+    const firstFlavor = Array.isArray(normalizedItem.flavors)
+      ? normalizedItem.flavors.find((flavor) => Boolean(flavor))
+      : ""
+
+    if (
+      (normalizedItem.type === "pack" || normalizedItem.type === "gift_box") &&
+      !normalizedItem.image &&
+      firstFlavor
+    ) {
+      normalizedItem.image = this.resolveImageUrl(firstFlavor)
+    }
+
+    if (
+      (normalizedItem.type === "pack" || normalizedItem.type === "gift_box") &&
+      normalizedItem.image &&
+      normalizedItem.image !== "/assets/images/jam-jar-hero.svg" &&
+      !firstFlavor
+    ) {
+      normalizedItem.image = this.resolveImageUrl(normalizedItem.image)
+    }
+
+    if (
+      (normalizedItem.type === "pack" || normalizedItem.type === "gift_box") &&
+      firstFlavor
+    ) {
+      normalizedItem.image = this.resolveImageUrl(firstFlavor)
+    }
+
+    const key = this.generateItemKey(normalizedItem)
     const existingIndex = this.items.findIndex((i) => i.key === key)
 
     if (existingIndex > -1) {
-      this.items[existingIndex].quantity += item.quantity || 1
+      this.items[existingIndex].quantity += normalizedItem.quantity || 1
     } else {
-      item.key = key
-      item.quantity = item.quantity || 1
-      this.items.push(item)
+      normalizedItem.key = key
+      normalizedItem.quantity = normalizedItem.quantity || 1
+      this.items.push(normalizedItem)
     }
 
     this.saveCart()
@@ -208,10 +237,16 @@ class CartEngine {
                 <strong class="drawer-line-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</strong>
               </div>
             </div>
+            <button type="button" class="drawer-remove-btn" onclick="window.cartEngine.removeItem('${item.key}')" title="Remove item" aria-label="Remove ${this.escapeHtml(item.title)}">&times;</button>
           </div>
         `,
       )
       .join("")
+
+    const clearBtn = document.getElementById("drawer-clear-cart-btn")
+    if (clearBtn) {
+      clearBtn.style.display = this.items.length > 0 ? "inline-flex" : "none"
+    }
 
     if (subtotalEl) {
       subtotalEl.textContent = `$${this.getSubtotal().toFixed(2)}`
@@ -392,6 +427,10 @@ class CartEngine {
     const grandTotal = subtotal + deliveryFee + tax
 
     tableContainer.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; gap:0.75rem; flex-wrap:wrap;">
+        <h2 style="margin:0; font-size:1.15rem;">Your Basket</h2>
+        <button type="button" class="btn-secondary-action" onclick="window.cartEngine.clearCart()" style="padding:0.55rem 1rem;">Clear Cart</button>
+      </div>
       <table class="cart-table">
         <thead>
           <tr>
@@ -414,10 +453,14 @@ class CartEngine {
                 "./gift-box.html",
                 window.location.href,
               ).toString()
+              const imageUrl = this.resolveImageUrl(item.image)
               return `
                 <tr>
                   <td>
-                    <strong>${this.escapeHtml(item.title)}</strong>
+                    <div style="display:flex; align-items:center; gap:0.75rem;">
+                      <img src="${imageUrl}" alt="${this.escapeHtml(item.title)}" width="52" height="52" style="object-fit:cover; border-radius:8px; background:#f8fafc;" loading="lazy">
+                      <strong>${this.escapeHtml(item.title)}</strong>
+                    </div>
                   </td>
                   <td>
                     <small style="color:#555;">${this.escapeHtml(this.formatItemDetails(item))}</small>
@@ -532,53 +575,81 @@ class CartEngine {
       return defaultImage
     }
 
-    if (/^(https?:)?\/\//i.test(imagePath) || imagePath.startsWith("data:")) {
-      return imagePath
+    const normalized = String(imagePath).trim()
+    if (/^(https?:)?\/\//i.test(normalized) || normalized.startsWith("data:")) {
+      return normalized
     }
 
-    const lower = String(imagePath).toLowerCase()
-    let mapped = null
+    const currentPath = window.location.pathname || "/"
+    const siteRoot = currentPath.includes("/SJ-cottage-food")
+      ? "/SJ-cottage-food"
+      : ""
 
-    if (lower.includes("rhubarb") || lower.includes("rhubarhuck")) {
-      mapped = "rhubarb-huckleberry.svg"
-    } else if (lower.includes("flathead") || lower.includes("cherry")) {
-      mapped = "flathead-cherry.svg"
-    } else if (
-      lower.includes("pineapple") ||
-      lower.includes("toasted") ||
-      lower.includes("coconut")
-    ) {
-      mapped = "pineapple-toasted-coconut.svg"
-    } else if (lower.includes("raspberry")) {
-      mapped = "raspberry.svg"
-    } else if (
-      lower.includes("strawberry") ||
-      lower.includes("vanilla") ||
-      lower.includes("bean")
-    ) {
-      mapped = "strawberry-vanilla-bean.svg"
-    } else if (lower.includes("huckleberry")) {
-      mapped = "huckleberry.svg"
-    }
+    const hasImageExtension = /\.(png|jpe?g|svg|webp|avif)(\?.*)?$/i.test(
+      normalized,
+    )
 
-    if (mapped) {
-      const basePath = window.location.pathname.includes("/SJ-cottage-food/")
-        ? "/SJ-cottage-food"
-        : ""
-      return new URL(
-        `${basePath}/public/assets/images/${mapped}`,
-        window.location.origin,
-      ).toString()
-    }
-
-    if (imagePath.startsWith("/")) {
-      if (imagePath.includes("/SJ-cottage-food/")) {
-        return imagePath
+    if (hasImageExtension) {
+      if (normalized.startsWith("/")) {
+        return new URL(normalized, window.location.origin).toString()
       }
-      return new URL(`.${imagePath}`, window.location.href).toString()
+
+      if (
+        normalized.startsWith("public/") ||
+        normalized.startsWith("images/")
+      ) {
+        return new URL(
+          `/${normalized.replace(/^\.\//, "")}`,
+          window.location.origin,
+        ).toString()
+      }
+
+      const relativeTarget = `${siteRoot ? siteRoot + "/public/" : "./"}${normalized.replace(/^\.\//, "")}`
+      return new URL(relativeTarget, window.location.href).toString()
     }
 
-    return new URL(imagePath, window.location.href).toString()
+    const knownImageMap = {
+      huckleberry:
+        "/SJ-cottage-food/public/images/shellysjellys-new-huckleberry-wleaf3-png4-49802a46f651.png",
+      "flathead cherry":
+        "/SJ-cottage-food/public/images/flatheadcherry-slider-926920bf3232.png",
+      cherry:
+        "/SJ-cottage-food/public/images/flatheadcherry-slider-926920bf3232.png",
+      pineapple: "/SJ-cottage-food/public/images/ptc-slider-b38888172f50.png",
+      "toasted coconut":
+        "/SJ-cottage-food/public/images/ptc-slider-b38888172f50.png",
+      coconut: "/SJ-cottage-food/public/images/ptc-slider-b38888172f50.png",
+      raspberry:
+        "/SJ-cottage-food/public/images/raspberry-slider-1f4329f29ba1.png",
+      strawberry: "/SJ-cottage-food/public/images/svb-slider2-1a5cbd173582.png",
+      vanilla: "/SJ-cottage-food/public/images/svb-slider2-1a5cbd173582.png",
+      bean: "/SJ-cottage-food/public/images/svb-slider2-1a5cbd173582.png",
+      rhubarb:
+        "/SJ-cottage-food/public/images/rhubarhuck-slider-b63891f53b73.png",
+      "rhubarb huckleberry":
+        "/SJ-cottage-food/public/images/rhubarhuck-slider-b63891f53b73.png",
+    }
+
+    const lower = normalized.toLowerCase()
+    for (const [key, mappedPath] of Object.entries(knownImageMap)) {
+      if (lower.includes(key)) {
+        return new URL(
+          `${siteRoot}${mappedPath.replace(/^\/SJ-cottage-food/, "")}`,
+          window.location.origin,
+        ).toString()
+      }
+    }
+
+    if (normalized.startsWith("/")) {
+      return new URL(normalized, window.location.origin).toString()
+    }
+
+    if (normalized.startsWith("public/")) {
+      return new URL(`/${normalized}`, window.location.origin).toString()
+    }
+
+    const relativeTarget = `${siteRoot ? siteRoot + "/public/" : "./"}${normalized.replace(/^\.\//, "")}`
+    return new URL(relativeTarget, window.location.href).toString()
   }
 
   escapeHtml(str) {

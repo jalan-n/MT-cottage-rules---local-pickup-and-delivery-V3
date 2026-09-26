@@ -5,7 +5,9 @@ declare(strict_types=1);
  * Farmstand pickup address, kitchen operating hours, delivery radius,
  * and contact inquiry form with CSRF and honeypot spam protection.
  */
-$pickupAddress = $settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901';
+$pickupAddress = trim((string)($settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901'));
+$pickupPhone   = trim((string)($settings['pickup_phone'] ?? '(406) 555-0192'));
+$pickupEmail   = trim((string)($settings['pickup_email'] ?? 'mtshellysjellys@gmail.com'));
 $mapsUrl       = 'https://maps.google.com/?q=' . urlencode($pickupAddress);
 $brandName     = $settings['brand_name'] ?? "Shelly's Jellys LLC";
 ?>
@@ -22,7 +24,9 @@ $brandName     = $settings['brand_name'] ?? "Shelly's Jellys LLC";
       <address class="contact-address-block">
         <strong><?= htmlspecialchars($brandName) ?> Kitchen</strong><br>
         <?= htmlspecialchars($pickupAddress) ?><br>
-        Flathead County, Montana
+        Flathead County, Montana<br>
+        <strong>Phone:</strong> <a href="tel:<?= htmlspecialchars(preg_replace('/[^0-9+]/', '', $pickupPhone) ?: '4065550192') ?>"><?= htmlspecialchars($pickupPhone) ?></a><br>
+        <strong>Email:</strong> <a href="mailto:<?= htmlspecialchars($pickupEmail) ?>"><?= htmlspecialchars($pickupEmail) ?></a>
       </address>
       
       <div class="map-action-wrap">

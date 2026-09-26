@@ -9,12 +9,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const banner = document.getElementById("promo-announcement-bar")
   const dismissBtn = document.getElementById("dismiss-promo-btn")
   if (banner && dismissBtn) {
-    if (sessionStorage.getItem("promo_banner_dismissed") === "1") {
+    const bannerVersion = banner.dataset.promoVersion || "default"
+    const dismissedVersion = sessionStorage.getItem("promo_banner_dismissed")
+    if (dismissedVersion === bannerVersion) {
       banner.style.display = "none"
     }
     dismissBtn.addEventListener("click", () => {
       banner.style.display = "none"
-      sessionStorage.setItem("promo_banner_dismissed", "1")
+      sessionStorage.setItem("promo_banner_dismissed", bannerVersion)
     })
   }
 

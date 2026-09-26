@@ -70,9 +70,14 @@ $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/
             <strong>Shelly's Jellys Kitchen</strong><br>
             <?= htmlspecialchars($pickupAddress) ?>
           </address>
-          <a href="<?= htmlspecialchars($mapsUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn-map">
-            &#128205; Show location on Google Map
-          </a>
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:0.75rem;">
+            <a href="<?= htmlspecialchars($mapsUrl) ?>" target="_blank" rel="noopener noreferrer" class="btn-map">
+              &#128205; Show location on Google Map
+            </a>
+            <a href="http://localhost/SJ-cottage-food/public/ShellysJellyscontact.vcf" target="_blank" rel="noopener noreferrer" class="btn-map" aria-label="Download Shelly's Jellys contact card">
+              &#128196; Save contact card
+            </a>
+          </div>
         </div>
 
         <!-- Delivery Address Section -->

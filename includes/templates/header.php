@@ -8,9 +8,66 @@ declare(strict_types=1);
 $brandName      = $settings['brand_name'] ?? "Shelly's Jellys LLC";
 $promoText      = $settings['promo_banner_text'] ?? 'Promotional deal! 15% off orders over $100!';
 $promoActive    = ($settings['promo_banner_active'] ?? '1') === '1';
+$promoButtonText = trim((string)($settings['promo_banner_button_text'] ?? 'View deal'));
+$promoButtonText = $promoButtonText !== '' ? $promoButtonText : 'View deal';
+$promoButtonUrl  = trim((string)($settings['promo_banner_button_url'] ?? './shop.html'));
+if ($promoButtonUrl === '') {
+    $promoButtonUrl = './shop.html';
+}
+if (!preg_match('/^(https?:)?\/\//i', $promoButtonUrl) && !str_starts_with($promoButtonUrl, '/')) {
+    $promoButtonUrl = './' . ltrim($promoButtonUrl, './');
+}
+$defaultNavigationItems = [
+    ['label' => 'Shop all flavors', 'url' => './shop.html', 'visible' => true],
+    ['label' => 'Build a Pack', 'url' => './packs.html', 'visible' => true],
+    ['label' => 'Build a Gift Box', 'url' => './gift-box.html', 'visible' => true],
+    ['label' => 'Special Orders', 'url' => './custom-orders.html', 'visible' => true],
+    ['label' => 'Contact Us', 'url' => './contact.html', 'visible' => true],
+];
+$rawNavigationLinks = json_decode((string)($settings['navigation_links'] ?? '[]'), true);
+$headerNavigationItems = is_array($rawNavigationLinks) && $rawNavigationLinks !== [] ? $rawNavigationLinks : $defaultNavigationItems;
+$headerNavigationItems = array_values(array_filter(array_map(function ($item) {
+    if (!is_array($item)) {
+        return null;
+    }
+    $label = trim((string)($item['label'] ?? ''));
+    $url = trim((string)($item['url'] ?? ''));
+    if ($label === '') {
+        return null;
+    }
+    $visible = array_key_exists('visible', $item) ? (bool)$item['visible'] : true;
+    if (is_string($item['visible'] ?? null)) {
+        $visible = strtolower((string)$item['visible']) !== 'false' && strtolower((string)$item['visible']) !== '0';
+    }
+    if ($url === '') {
+        $url = './shop.html';
+    }
+    return ['label' => $label, 'url' => $url, 'visible' => $visible];
+}, $headerNavigationItems)));
+if ($headerNavigationItems === []) {
+    $headerNavigationItems = $defaultNavigationItems;
+}
 $currentUrl     = $canonical ?? '/';
 $assetBase      = getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public';
 $assetBase      = rtrim($assetBase, '/');
+$brandLogoPath  = trim((string)($settings['header_logo_path'] ?? ''));
+if ($brandLogoPath === '') {
+    $brandLogoPath = $assetBase . '/assets/images/shellys-jellys-logo.svg';
+} elseif (preg_match('/^(https?:)?\/\//i', $brandLogoPath) !== 1 && !str_starts_with($brandLogoPath, '/')) {
+    $brandLogoPath = './' . ltrim($brandLogoPath, './');
+} elseif (str_starts_with($brandLogoPath, '/')) {
+    $basePrefix = function_exists('app_base_path') ? app_base_path() : (trim((string)(getenv('APP_BASE_PATH') ?: getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food')));
+    $basePrefix = rtrim($basePrefix, '/');
+    if ($basePrefix !== '' && ($brandLogoPath === $basePrefix || str_starts_with($brandLogoPath, $basePrefix . '/'))) {
+        $brandLogoPath = $brandLogoPath;
+    } else {
+        $brandLogoPath = function_exists('app_url') ? app_url($brandLogoPath) : (rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/') . $brandLogoPath);
+    }
+}
+$pickupAddress  = trim((string)($settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901'));
+$pickupPhone    = trim((string)($settings['pickup_phone'] ?? '(406) 555-0192'));
+$pickupEmail    = trim((string)($settings['pickup_email'] ?? 'mtshellysjellys@gmail.com'));
+$promoVersion   = md5($promoText . '|' . $promoButtonText . '|' . $promoButtonUrl . '|' . ($promoActive ? '1' : '0'));
 $seoTitle       = !empty($title) ? $this->capString($title, 60) ?? $title : "Shelly's Jellys LLC | Gourmet Homemade Jams";
 $seoDescription = !empty($description) ? $this->capString($description, 160) ?? $description : 'Small-batch artisanal gourmet homemade jams. More fruit, less sugar, no preservatives. Local delivery & farmstand pickup.';
 $brandJson = json_encode([
@@ -18,11 +75,11 @@ $brandJson = json_encode([
     '@type' => 'LocalBusiness',
     'name' => $brandName,
     'image' => '/assets/images/jam-jar-hero.svg',
-    'telephone' => '(406) 555-0192',
-    'email' => 'mtshellysjellys@gmail.com',
+    'telephone' => $pickupPhone,
+    'email' => $pickupEmail,
     'address' => [
         '@type' => 'PostalAddress',
-        'streetAddress' => '458 Orchard Vista Way',
+        'streetAddress' => $pickupAddress,
         'addressLocality' => 'Kalispell',
         'addressRegion' => 'MT',
         'postalCode' => '59901',
@@ -95,10 +152,10 @@ foreach ($products as $productRow) {
 <body>
   <!-- Top Dismissible Promotional Announcement Bar -->
   <?php if ($promoActive): ?>
-    <aside id="promo-announcement-bar" class="site-banner promo-burgundy-bar" aria-label="Announcement">
+    <aside id="promo-announcement-bar" class="site-banner promo-burgundy-bar" aria-label="Announcement" data-promo-version="<?= htmlspecialchars($promoVersion, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
       <div class="banner-inner">
         <span class="banner-text"><?= htmlspecialchars($promoText) ?></span>
-        <a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/shop.html" class="pill-btn-deal">View deal</a>
+        <a href="<?= htmlspecialchars($promoButtonUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" class="pill-btn-deal"><?= htmlspecialchars($promoButtonText) ?></a>
         <button type="button" id="dismiss-promo-btn" class="banner-dismiss" aria-label="Dismiss Announcement">&times;</button>
       </div>
     </aside>
@@ -116,8 +173,8 @@ foreach ($products as $productRow) {
 
       <!-- Logo -->
       <div class="brand-logo-area">
-        <a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/index.html" class="brand-logo-link" title="Shelly's Jellys Home">
-          <img src="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/assets/images/shellys-jellys-logo.svg" alt="Shelly's Jellys LLC" class="brand-logo-img" width="180" height="58">
+        <a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/index.html" class="brand-logo-link" title="<?= htmlspecialchars($brandName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> Home">
+          <img src="<?= htmlspecialchars($brandLogoPath, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" alt="<?= htmlspecialchars($brandName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" class="brand-logo-img" width="180" height="58">
         </a>
       </div>
 
@@ -153,11 +210,15 @@ foreach ($products as $productRow) {
     <nav id="site-nav-bar" class="site-navigation-bar" aria-label="Primary Navigation">
       <div class="nav-scroll-container">
         <ul class="nav-links-list">
-          <li><a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/shop.html" class="<?= $currentUrl === '/shop.html' ? 'active' : '' ?>">Shop all flavors</a></li>
-          <li><a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/packs.html" class="<?= $currentUrl === '/packs.html' ? 'active' : '' ?>">Build a Pack</a></li>
-          <li><a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/gift-box.html" class="<?= $currentUrl === '/gift-box.html' ? 'active' : '' ?>">Build a Gift Box</a></li>
-          <li><a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/custom-orders.html" class="<?= $currentUrl === '/custom-orders.html' ? 'active' : '' ?>">Special Orders</a></li>
-          <li><a href="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/contact.html" class="<?= $currentUrl === '/contact.html' ? 'active' : '' ?>">Contact Us</a></li>
+          <?php foreach ($headerNavigationItems as $navItem): ?>
+            <?php if (!($navItem['visible'] ?? true)) continue; ?>
+            <?php $navHref = rtrim((string)($navItem['url'] ?? './shop.html'), '/'); ?>
+            <?php if ($navHref === '') { $navHref = './shop.html'; } ?>
+            <?php if (!preg_match('/^(https?:)?\/\//i', $navHref) && !str_starts_with($navHref, '/')) { $navHref = './' . ltrim($navHref, './'); } ?>
+            <?php $navCurrent = rtrim((string)$currentUrl, '/'); ?>
+            <?php $isActive = $navCurrent === '/index.html' ? $navHref === './index.html' : (str_ends_with($navCurrent, str_replace('./', '/', $navHref)) || $navCurrent === str_replace('./', '/', $navHref)); ?>
+            <li><a href="<?= htmlspecialchars($navHref, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" class="<?= $isActive ? 'active' : '' ?>"><?= htmlspecialchars((string)($navItem['label'] ?? 'Navigation'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></a></li>
+          <?php endforeach; ?>
         </ul>
       </div>
     </nav>
