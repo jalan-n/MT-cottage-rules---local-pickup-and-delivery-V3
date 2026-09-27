@@ -31,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const deliveryBox = document.getElementById("delivery-address-section")
   const dateLabel = document.getElementById("co-date-label")
   const timeLabel = document.getElementById("co-time-label")
+  const cityInput = document.getElementById("co-city")
+  const cityFeedback = document.getElementById("co-city-feedback")
 
   let squareCard = null
   let squarePayments = null
@@ -59,6 +61,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeNameEl)
           typeNameEl.textContent = isDelivery ? "Delivery" : "Pickup"
 
+        validateDeliveryCity()
+
         // Update local cartEngine fulfillment
         if (window.cartEngine) {
           window.cartEngine.saveFulfillment({ type: radio.value })
@@ -66,6 +70,10 @@ document.addEventListener("DOMContentLoaded", () => {
         renderOrderSummary()
       })
     })
+
+    if (cityInput) {
+      cityInput.addEventListener("input", validateDeliveryCity)
+    }
 
     // Set minimum date to tomorrow
     const dateInput = document.getElementById("co-date")
@@ -75,6 +83,52 @@ document.addEventListener("DOMContentLoaded", () => {
       dateInput.min = tomorrow.toISOString().split("T")[0]
       dateInput.value = tomorrow.toISOString().split("T")[0]
     }
+  }
+
+  function normalizeCityName(value) {
+    return String(value || "")
+      .trim()
+      .replace(/\s+/g, " ")
+  }
+
+  function validateDeliveryCity() {
+    const isDelivery =
+      document.querySelector('input[name="fulfillment_type"]:checked')
+        ?.value === "delivery"
+
+    if (!isDelivery || !cityInput) {
+      if (cityFeedback) cityFeedback.textContent = ""
+      return true
+    }
+
+    const cityName = normalizeCityName(cityInput.value)
+    const allowedCities = (window.deliveryCityNames || []).map((city) =>
+      normalizeCityName(city),
+    )
+
+    if (!cityName) {
+      if (cityFeedback) {
+        cityFeedback.textContent =
+          "Please enter your city to confirm delivery availability."
+        cityFeedback.style.color = "#b45309"
+      }
+      return false
+    }
+
+    if (!allowedCities.includes(cityName)) {
+      if (cityFeedback) {
+        cityFeedback.textContent =
+          "We currently only deliver to selected Flathead Valley cities in this service area."
+        cityFeedback.style.color = "#b45309"
+      }
+      return false
+    }
+
+    if (cityFeedback) {
+      cityFeedback.textContent = "Delivery is available for this city."
+      cityFeedback.style.color = "#166534"
+    }
+    return true
   }
 
   function renderOrderSummary() {
@@ -176,6 +230,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!form.checkValidity()) {
         form.reportValidity()
+        return
+      }
+
+      if (!validateDeliveryCity()) {
+        if (cityInput) cityInput.focus()
         return
       }
 

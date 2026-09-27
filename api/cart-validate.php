@@ -28,8 +28,9 @@ $fulfillmentType = in_array($data['fulfillment_type'] ?? '', ['pickup', 'deliver
     ? $data['fulfillment_type'] 
     : 'pickup';
 $zipCode = isset($data['zip_code']) ? trim((string)$data['zip_code']) : null;
+$city = trim((string)($data['customer']['city'] ?? ($data['city'] ?? '')));
 
-$result = calculate_and_validate_cart($items, $fulfillmentType, $zipCode);
+$result = calculate_and_validate_cart($items, $fulfillmentType, $zipCode, $city);
 
 echo json_encode([
     'success' => true,

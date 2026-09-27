@@ -8,6 +8,11 @@ $pickupAddress = $settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispel
 $mapsUrl       = 'https://maps.google.com/?q=' . urlencode($pickupAddress);
 $deliveryFee   = number_format((float)($settings['local_delivery_fee'] ?? 6.50), 2);
 $freeThreshold = number_format((float)($settings['free_delivery_threshold'] ?? 45.00), 2);
+$deliveryRadiusMiles = trim((string)($settings['delivery_radius_miles'] ?? '20')) ?: '20';
+$deliveryCities = get_supported_city_names();
+if ($deliveryCities === []) {
+    $deliveryCities = ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Lakeside', 'Somers', 'Creston', 'Kila', 'Marion', 'Rollins', 'Hungry Horse', 'Coram', 'Ferndale', 'Swan River', 'Woods Bay', 'Evergreen'];
+}
 $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/');
 ?>
 <section class="page-header text-center">
@@ -59,6 +64,7 @@ $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/
             <div>
               <strong>Local Valley Delivery ($<?= $deliveryFee ?>)</strong>
               <small>FREE for orders over $<?= $freeThreshold ?></small>
+              <small>We are currently delivering to cities within a <?= htmlspecialchars($deliveryRadiusMiles, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> mile radius of our Kitchen.</small>
             </div>
           </label>
         </div>
@@ -90,6 +96,7 @@ $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/
             <div class="form-group">
               <label for="co-city">City *</label>
               <input type="text" id="co-city" name="city" value="Kalispell">
+              <div id="co-city-feedback" class="field-hint" aria-live="polite"></div>
             </div>
             <div class="form-group">
               <label for="co-zip">Postal Code (ZIP) *</label>
@@ -259,3 +266,7 @@ $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/
     </div>
   </div>
 </div>
+
+<script>
+  window.deliveryCityNames = <?= json_encode($deliveryCities, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+</script>

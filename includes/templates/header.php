@@ -18,10 +18,13 @@ if (!preg_match('/^(https?:)?\/\//i', $promoButtonUrl) && !str_starts_with($prom
     $promoButtonUrl = './' . ltrim($promoButtonUrl, './');
 }
 $defaultNavigationItems = [
-    ['label' => 'Shop all flavors', 'url' => './shop.html', 'visible' => true],
+    ['label' => 'Home', 'url' => './index.html', 'visible' => true],
+    ['label' => 'Shop All Jams', 'url' => './shop.html', 'visible' => true],
     ['label' => 'Build a Pack', 'url' => './packs.html', 'visible' => true],
     ['label' => 'Build a Gift Box', 'url' => './gift-box.html', 'visible' => true],
-    ['label' => 'Special Orders', 'url' => './custom-orders.html', 'visible' => true],
+    ['label' => 'Custom Orders', 'url' => './custom-orders.html', 'visible' => true],
+    ['label' => 'Cart', 'url' => './cart.html', 'visible' => true],
+    ['label' => 'Checkout', 'url' => './checkout.html', 'visible' => true],
     ['label' => 'Contact Us', 'url' => './contact.html', 'visible' => true],
 ];
 $rawNavigationLinks = json_decode((string)($settings['navigation_links'] ?? '[]'), true);
@@ -53,15 +56,18 @@ $assetBase      = rtrim($assetBase, '/');
 $brandLogoPath  = trim((string)($settings['header_logo_path'] ?? ''));
 if ($brandLogoPath === '') {
     $brandLogoPath = $assetBase . '/assets/images/shellys-jellys-logo.svg';
-} elseif (preg_match('/^(https?:)?\/\//i', $brandLogoPath) !== 1 && !str_starts_with($brandLogoPath, '/')) {
-    $brandLogoPath = './' . ltrim($brandLogoPath, './');
-} elseif (str_starts_with($brandLogoPath, '/')) {
-    $basePrefix = function_exists('app_base_path') ? app_base_path() : (trim((string)(getenv('APP_BASE_PATH') ?: getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food')));
-    $basePrefix = rtrim($basePrefix, '/');
-    if ($basePrefix !== '' && ($brandLogoPath === $basePrefix || str_starts_with($brandLogoPath, $basePrefix . '/'))) {
-        $brandLogoPath = $brandLogoPath;
+} elseif (preg_match('/^(https?:)?\/\//i', $brandLogoPath) !== 1) {
+    $basePrefix = rtrim((string)(function_exists('app_base_path') ? app_base_path() : (getenv('APP_BASE_PATH') ?: getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food')), '/');
+    $normalizedLogoPath = $brandLogoPath;
+    if ($basePrefix !== '' && str_starts_with($normalizedLogoPath, $basePrefix)) {
+        $normalizedLogoPath = substr($normalizedLogoPath, strlen($basePrefix));
+    }
+    if (str_starts_with($normalizedLogoPath, '/')) {
+        $brandLogoPath = function_exists('app_url') ? app_url($normalizedLogoPath) : (rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/') . $normalizedLogoPath);
+    } elseif (str_starts_with($normalizedLogoPath, 'public/')) {
+        $brandLogoPath = function_exists('app_url') ? app_url('/' . $normalizedLogoPath) : (rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/') . '/' . $normalizedLogoPath);
     } else {
-        $brandLogoPath = function_exists('app_url') ? app_url($brandLogoPath) : (rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/') . $brandLogoPath);
+        $brandLogoPath = './' . ltrim($normalizedLogoPath, './');
     }
 }
 $pickupAddress  = trim((string)($settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901'));

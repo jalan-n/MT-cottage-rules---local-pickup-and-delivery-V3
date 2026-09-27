@@ -173,12 +173,27 @@ function sanitize_and_store_upload(
         return ['success' => false, 'error' => 'File exceeds the ' . round($maxBytes / 1048576, 1) . 'MB limit.'];
     }
 
-    // Inspect real MIME type using FileInfo
+    // Inspect real MIME type using FileInfo. Some Windows/XAMPP setups report
+    // generic octet-stream for valid uploads, so we fall back to the file extension.
     $finfo = new finfo(FILEINFO_MIME_TYPE);
-    $mime = $finfo->file($file['tmp_name']);
+    $mime = $finfo !== false ? $finfo->file($file['tmp_name']) : false;
+    $mime = is_string($mime) ? $mime : false;
 
-    if (!in_array($mime, $allowedMimes, true)) {
-        return ['success' => false, 'error' => "Disallowed file type: {$mime}."];
+    if ($mime === false || $mime === 'application/octet-stream' || !in_array($mime, $allowedMimes, true)) {
+        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $mimeByExtension = [
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'svg' => 'image/svg+xml',
+            'pdf' => 'application/pdf',
+        ];
+        $mime = $mimeByExtension[$ext] ?? $mime;
+    }
+
+    if (!is_string($mime) || !in_array($mime, $allowedMimes, true)) {
+        return ['success' => false, 'error' => 'Disallowed file type: ' . ($mime ?: 'unknown') . '.'];
     }
 
     // Determine safe extension based on real MIME
@@ -204,7 +219,12 @@ function sanitize_and_store_upload(
         mkdir($targetDir, 0755, true);
     }
 
-    if (!move_uploaded_file($file['tmp_name'], $destination)) {
+    $moved = move_uploaded_file($file['tmp_name'], $destination);
+    if (!$moved && file_exists($file['tmp_name'])) {
+        $moved = copy($file['tmp_name'], $destination);
+    }
+
+    if (!$moved) {
         return ['success' => false, 'error' => 'Failed to move uploaded file to destination.'];
     }
 

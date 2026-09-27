@@ -15,6 +15,28 @@ $heroTagline = $heroTagline !== '' ? $heroTagline : 'More fruit. Less sugar. No 
 $heroRatingVisible = ($settings['hero_rating_visible'] ?? '1') === '1';
 $heroRatingText = trim((string)($settings['hero_rating_text'] ?? 'Consistent five star rating from our customers!'));
 $heroRatingText = $heroRatingText !== '' ? $heroRatingText : 'Consistent five star rating from our customers!';
+$heroImagePath = trim((string)($settings['hero_image_path'] ?? ''));
+$heroImageUrl = '';
+if ($heroImagePath !== '') {
+    $heroAssetCandidate = $heroImagePath;
+    $basePrefix = rtrim((string)app_base_path(), '/');
+    if ($basePrefix !== '' && str_starts_with($heroAssetCandidate, $basePrefix)) {
+        $heroAssetCandidate = substr($heroAssetCandidate, strlen($basePrefix));
+    }
+
+    if (preg_match('/^(https?:)?\/\//i', $heroAssetCandidate) === 1) {
+        $heroImageUrl = $heroAssetCandidate;
+    } elseif (str_starts_with($heroAssetCandidate, '/')) {
+        $heroImageUrl = app_url($heroAssetCandidate);
+    } elseif (str_starts_with($heroAssetCandidate, 'public/')) {
+        $heroImageUrl = app_url('/' . $heroAssetCandidate);
+    } else {
+        $heroImageUrl = app_url('/public/images/' . ltrim($heroAssetCandidate, '/'));
+    }
+}
+if ($heroImageUrl === '') {
+    $heroImageUrl = app_url('/public/assets/images/jam-jar-hero.svg');
+}
 $heroCtasRaw = json_decode((string)($settings['hero_ctas'] ?? '[]'), true);
 $heroCtas = is_array($heroCtasRaw) && $heroCtasRaw !== [] ? $heroCtasRaw : [
     ['label' => 'Shop all jams', 'url' => './shop.html', 'visible' => true],
@@ -76,9 +98,9 @@ if ($heroCtas === []) {
       </div>
     </div>
 
-    <!-- Right Side Hero Glass Mason Jar -->
+    <!-- Right Side Hero Media -->
     <div class="hero-media-block">
-      <img src="<?= htmlspecialchars($assetBase, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>/assets/images/jam-jar-hero.svg" alt="Handcrafted Mason Jar of Shelly's Jellys Gourmet Jam" class="hero-jar-graphic" width="320" height="400" loading="eager">
+      <img src="<?= htmlspecialchars($heroImageUrl, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" alt="Hero image for Shelly's Jellys" class="hero-jar-graphic" width="320" height="400" loading="eager">
     </div>
   </div>
 </section>

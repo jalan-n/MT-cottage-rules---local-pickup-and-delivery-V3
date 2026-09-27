@@ -75,9 +75,9 @@ if ($fulfillmentType === 'delivery') {
         exit;
     }
 
-    if (!is_delivery_zip_supported($zipCode)) {
+    if (!is_delivery_city_supported($city)) {
         http_response_code(422);
-        echo json_encode(['success' => false, 'error' => "Postal code {$zipCode} is outside our local delivery zone."]);
+        echo json_encode(['success' => false, 'error' => "City {$city} is outside our local delivery zone."]);
         exit;
     }
 }
@@ -92,7 +92,7 @@ if (empty($rawItems)) {
     exit;
 }
 
-$validationResult = calculate_and_validate_cart($rawItems, $fulfillmentType, $zipCode);
+$validationResult = calculate_and_validate_cart($rawItems, $fulfillmentType, $zipCode, $city);
 
 if (!$validationResult['valid']) {
     http_response_code(422);

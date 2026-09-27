@@ -51,6 +51,7 @@ if ($method === 'POST') {
         'promo_banner_text',
         'pickup_address',
         'pickup_hours',
+        'supported_cities',
         'supported_zip_codes',
         'delivery_radius_miles',
         'local_delivery_fee',

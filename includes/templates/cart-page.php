@@ -9,6 +9,7 @@ declare(strict_types=1);
 $pickupAddress = $settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901';
 $deliveryFee   = number_format((float)($settings['local_delivery_fee'] ?? 6.50), 2);
 $freeThreshold = number_format((float)($settings['free_delivery_threshold'] ?? 45.00), 2);
+$deliveryRadiusMiles = trim((string)($settings['delivery_radius_miles'] ?? '20')) ?: '20';
 $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/');
 ?>
 <section class="page-header text-center">
@@ -56,6 +57,7 @@ $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/
             <div>
               <strong>Local Valley Delivery ($<?= $deliveryFee ?>)</strong>
               <small>FREE for orders over $<?= $freeThreshold ?></small>
+              <small>We are currently delivering to cities within a <?= htmlspecialchars($deliveryRadiusMiles, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> mile radius of our Kitchen.</small>
             </div>
           </label>
         </div>

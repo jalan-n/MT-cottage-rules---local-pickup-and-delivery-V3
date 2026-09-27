@@ -134,16 +134,80 @@ function get_bundle_configs(bool $activeOnly = true): array {
 }
 
 /**
- * Validate customer delivery postal code against allowed delivery zones
+ * Normalize supported delivery city names from JSON or comma-separated input.
+ */
+function normalize_supported_city_names($rawValue): array {
+    $items = [];
+
+    if (is_array($rawValue)) {
+        $items = $rawValue;
+    } elseif (is_string($rawValue) && trim($rawValue) !== '') {
+        $value = trim($rawValue);
+        $decoded = json_decode($value, true);
+        if (is_array($decoded)) {
+            $items = $decoded;
+        } else {
+            $items = preg_split('/\s*,\s*/', $value) ?: [$value];
+        }
+    }
+
+    $normalized = [];
+    foreach ($items as $item) {
+        $city = trim((string)$item);
+        if ($city === '') {
+            continue;
+        }
+
+        $city = preg_replace('/\s+/', ' ', $city);
+        $city = ucwords(strtolower($city));
+        if (!in_array($city, $normalized, true)) {
+            $normalized[] = $city;
+        }
+    }
+
+    return $normalized;
+}
+
+/**
+ * Load all supported delivery city names from the saved site settings.
+ */
+function get_supported_city_names(): array {
+    $settings = get_site_settings();
+
+    foreach (['supported_cities', 'supported_zip_codes'] as $key) {
+        if (!array_key_exists($key, $settings)) {
+            continue;
+        }
+
+        $cities = normalize_supported_city_names($settings[$key]);
+        if ($cities !== []) {
+            return $cities;
+        }
+    }
+
+    return [];
+}
+
+/**
+ * Check whether a customer-entered city is within the current delivery area.
+ */
+function is_delivery_city_supported(string $city): bool {
+    $lookup = trim($city);
+    if ($lookup === '') {
+        return false;
+    }
+
+    $supported = array_map('strtolower', array_map('trim', get_supported_city_names()));
+    return in_array(strtolower($lookup), $supported, true);
+}
+
+/**
+ * Backward-compatible ZIP validation for older data sets.
  */
 function is_delivery_zip_supported(string $zipCode): bool {
     $settings = get_site_settings();
-    $rawZips = $settings['supported_zip_codes'] ?? '[]';
-    $supported = json_decode($rawZips, true);
-
-    if (!is_array($supported)) {
-        $supported = array_map('trim', explode(',', $rawZips));
-    }
+    $rawZips = $settings['supported_zip_codes'] ?? $settings['supported_cities'] ?? '[]';
+    $supported = normalize_supported_city_names($rawZips);
 
     $cleanZip = trim($zipCode);
     foreach ($supported as $z) {
@@ -181,7 +245,7 @@ function is_delivery_zip_supported(string $zipCode): bool {
  *   ]
  * ]
  */
-function calculate_and_validate_cart(array $items, string $fulfillmentType, ?string $zipCode = null): array {
+function calculate_and_validate_cart(array $items, string $fulfillmentType, ?string $zipCode = null, ?string $city = null): array {
     $db = get_db();
     $settings = get_site_settings();
 
@@ -337,9 +401,10 @@ function calculate_and_validate_cart(array $items, string $fulfillmentType, ?str
     $freeThreshold = (float)($settings['free_delivery_threshold'] ?? 45.00);
 
     if ($fulfillmentType === 'delivery') {
-        if (empty($zipCode) || !is_delivery_zip_supported($zipCode)) {
+        $deliveryCity = trim((string)($city ?? ''));
+        if (empty($deliveryCity) || !is_delivery_city_supported($deliveryCity)) {
             $deliverySupported = false;
-            $errors[] = "Local delivery is not currently available for postal code {$zipCode}.";
+            $errors[] = "Local delivery is not currently available for city {$deliveryCity}.";
         } else {
             if ($subtotal >= $freeThreshold) {
                 $deliveryFee = 0.00;

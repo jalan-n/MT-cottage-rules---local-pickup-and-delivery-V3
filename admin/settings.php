@@ -73,9 +73,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
     }
 
+    $supportedCitiesValue = trim((string)($_POST['supported_cities'] ?? $_POST['supported_zip_codes'] ?? ''));
+    $supportedCities = [];
+    foreach (preg_split('/\s*,\s*/', $supportedCitiesValue) ?: [$supportedCitiesValue] as $city) {
+        $city = trim((string)$city);
+        if ($city !== '') {
+            $supportedCities[] = $city;
+        }
+    }
+    $supportedCities = array_values(array_unique($supportedCities));
+
     $settingsToUpdate = [
         'brand_name'              => trim((string)($_POST['brand_name'] ?? '')),
         'header_logo_path'        => trim((string)($_POST['header_logo_path'] ?? '')),
+        'hero_image_path'         => trim((string)($_POST['hero_image_path'] ?? '')),
         'promo_banner_active'     => isset($_POST['promo_banner_active']) ? '1' : '0',
         'promo_banner_text'       => trim((string)($_POST['promo_banner_text'] ?? '')),
         'promo_banner_button_text' => trim((string)($_POST['promo_banner_button_text'] ?? 'View deal')),
@@ -91,10 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'pickup_phone'            => trim((string)($_POST['pickup_phone'] ?? '')),
         'pickup_email'            => trim((string)($_POST['pickup_email'] ?? '')),
         'pickup_hours'            => trim((string)($_POST['pickup_hours'] ?? '')),
-        'delivery_radius_miles'   => trim((string)($_POST['delivery_radius_miles'] ?? '18')),
+        'delivery_radius_miles'   => trim((string)($_POST['delivery_radius_miles'] ?? '20')),
         'local_delivery_fee'      => trim((string)($_POST['local_delivery_fee'] ?? '6.50')),
         'free_delivery_threshold' => trim((string)($_POST['free_delivery_threshold'] ?? '45.00')),
-        'supported_zip_codes'     => trim((string)($_POST['supported_zip_codes'] ?? '[]')),
+        'supported_cities'        => json_encode($supportedCities, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+        'supported_zip_codes'     => json_encode($supportedCities, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         'navigation_links'        => json_encode($navigationItems, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
     ];
 
@@ -108,6 +120,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         if ($uploadRes['success']) {
             $settingsToUpdate['header_logo_path'] = app_url('/public/images/' . $uploadRes['filename']);
+        }
+    }
+
+    $removeHeroImage = isset($_POST['remove_hero_image']) && $_POST['remove_hero_image'] === '1';
+    if ($removeHeroImage) {
+        $currentHeroImage = trim((string)($settings['hero_image_path'] ?? ''));
+        if ($currentHeroImage !== '') {
+            $currentHeroPath = parse_url($currentHeroImage, PHP_URL_PATH);
+            if ($currentHeroPath !== '') {
+                $diskPath = dirname(__DIR__) . '/' . ltrim($currentHeroPath, '/');
+                if (is_file($diskPath)) {
+                    @unlink($diskPath);
+                }
+            }
+        }
+        $settingsToUpdate['hero_image_path'] = '';
+    } elseif (isset($_FILES['hero_image_file']) && !empty($_FILES['hero_image_file']['name'])) {
+        $uploadRes = sanitize_and_store_upload(
+            $_FILES['hero_image_file'],
+            dirname(__DIR__) . '/public/images',
+            ['image/svg+xml', 'image/png', 'image/jpeg', 'image/webp'],
+            2097152 // 2MB
+        );
+        if ($uploadRes['success']) {
+            $settingsToUpdate['hero_image_path'] = app_url('/public/images/' . $uploadRes['filename']);
+        } else {
+            $flash = 'Hero image upload failed: ' . $uploadRes['error'];
+            $flashType = 'error';
         }
     }
 
@@ -160,16 +200,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $settings = get_site_settings();
 
 $defaultNavLinks = [
-    ['label' => 'Shop all flavors', 'url' => './shop.html', 'visible' => true],
+    ['label' => 'Home', 'url' => './index.html', 'visible' => true],
+    ['label' => 'Shop All Jams', 'url' => './shop.html', 'visible' => true],
     ['label' => 'Build a Pack', 'url' => './packs.html', 'visible' => true],
     ['label' => 'Build a Gift Box', 'url' => './gift-box.html', 'visible' => true],
-    ['label' => 'Special Orders', 'url' => './custom-orders.html', 'visible' => true],
+    ['label' => 'Custom Orders', 'url' => './custom-orders.html', 'visible' => true],
+    ['label' => 'Cart', 'url' => './cart.html', 'visible' => true],
+    ['label' => 'Checkout', 'url' => './checkout.html', 'visible' => true],
     ['label' => 'Contact Us', 'url' => './contact.html', 'visible' => true],
 ];
 
 $navigationConfig = json_decode((string)($settings['navigation_links'] ?? '[]'), true);
-if (!is_array($navigationConfig) || $navigationConfig === []) {
+if (!is_array($navigationConfig)) {
     $navigationConfig = $defaultNavLinks;
+} else {
+    $normalizedNavigation = [];
+    $seenKeys = [];
+    foreach ($navigationConfig as $navItem) {
+        if (!is_array($navItem)) {
+            continue;
+        }
+        $label = trim((string)($navItem['label'] ?? ''));
+        $url = trim((string)($navItem['url'] ?? ''));
+        if ($label === '') {
+            continue;
+        }
+        $key = strtolower($label) . '|' . strtolower($url);
+        if (isset($seenKeys[$key])) {
+            continue;
+        }
+        $seenKeys[$key] = true;
+        $normalizedNavigation[] = [
+            'label' => $label,
+            'url' => $url !== '' ? $url : './shop.html',
+            'visible' => array_key_exists('visible', $navItem) ? (bool)$navItem['visible'] : true,
+        ];
+    }
+    foreach ($defaultNavLinks as $defaultItem) {
+        $label = trim((string)($defaultItem['label'] ?? ''));
+        $url = trim((string)($defaultItem['url'] ?? './shop.html'));
+        if ($label === '') {
+            continue;
+        }
+        $key = strtolower($label) . '|' . strtolower($url);
+        if (!isset($seenKeys[$key])) {
+            $seenKeys[$key] = true;
+            $normalizedNavigation[] = [
+                'label' => $label,
+                'url' => $url,
+                'visible' => (bool)($defaultItem['visible'] ?? true),
+            ];
+        }
+    }
+    $navigationConfig = $normalizedNavigation;
 }
 
 $defaultHeroCtas = [
@@ -182,12 +265,39 @@ if (!is_array($heroCtas) || $heroCtas === []) {
     $heroCtas = $defaultHeroCtas;
 }
 
+$deliveryRadiusCityMap = [
+    '5' => ['Kalispell', 'Evergreen', 'Columbia Heights', 'Batavia'],
+    '10' => ['Kalispell', 'Evergreen', 'Columbia Heights', 'Somers', 'Creston', 'Batavia', 'Whitefish'],
+    '15' => ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Somers', 'Creston', 'Kila', 'Evergreen', 'Columbia Heights'],
+    '20' => ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Lakeside', 'Somers', 'Creston', 'Kila', 'Marion', 'Rollins', 'Hungry Horse', 'Coram', 'Ferndale', 'Swan River', 'Woods Bay', 'Evergreen'],
+    '30' => ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Marion', 'Ferndale', 'Swan River', 'Woods Bay', 'Rollins', 'Creston', 'Kila', 'Lakeside', 'Somers', 'Hungry Horse', 'Coram', 'Martin City', 'West Glacier', 'Big Arm', 'Dayton', 'Olney', 'Bear Dance', 'Apgar', 'Swan Lake', 'Elmo', 'Nyack', 'Niarada'],
+    '40' => ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Marion', 'Ferndale', 'Swan River', 'Woods Bay', 'Rollins', 'Bear Dance', 'Olney', 'Dayton', 'Proctor', 'Elmo', 'West Glacier', 'Lake Mary Ronan', 'Polson', 'Stryker', 'Polebridge', 'Happys Inn', 'Trego', 'Lakeside', 'Somers', 'Hungry Horse', 'Coram', 'Martin City', 'Kila', 'Creston', 'Evergreen', 'Columbia Heights', 'Big Arm', 'Ronan'],
+    '50' => ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Lakeside', 'Somers', 'Marion', 'Kila', 'Creston', 'Hungry Horse', 'Coram', 'Martin City', 'West Glacier', 'Eureka', 'Big Arm', 'Rollins', 'Dayton', 'Elmo', 'Proctor', 'Swan Lake', 'Ronan', 'Polson', 'Condon', 'Olney', 'Stryker', 'Niarada', 'Finley Point', 'Woods Bay', 'Bear Dance', 'Happys Inn', 'Nyack', 'Lake Mary Ronan', 'Libby'],
+];
+$selectedRadius = trim((string)($settings['delivery_radius_miles'] ?? '20'));
+if (!isset($deliveryRadiusCityMap[$selectedRadius])) {
+    $closestRadius = '20';
+    $closestDiff = PHP_INT_MAX;
+    foreach (array_keys($deliveryRadiusCityMap) as $radiusKey) {
+        $diff = abs((int)$radiusKey - (int)$selectedRadius);
+        if ($diff < $closestDiff) {
+            $closestDiff = $diff;
+            $closestRadius = (string)$radiusKey;
+        }
+    }
+    $selectedRadius = $closestRadius;
+}
+$supportedCitiesFromSettings = get_supported_city_names();
+$supportedCitiesFieldValue = $supportedCitiesFromSettings !== [] ? implode(', ', $supportedCitiesFromSettings) : implode(', ', $deliveryRadiusCityMap[$selectedRadius]);
+
 $promoLinkOptions = [
     './index.html' => 'Home',
-    './shop.html' => 'Shop All Flavors',
+    './shop.html' => 'Shop All Jams',
     './packs.html' => 'Build a Pack',
     './gift-box.html' => 'Build a Gift Box',
-    './custom-orders.html' => 'Special Orders',
+    './custom-orders.html' => 'Custom Orders',
+    './cart.html' => 'Cart',
+    './checkout.html' => 'Checkout',
     './contact.html' => 'Contact Us',
 ];
 
@@ -258,6 +368,27 @@ require_once __DIR__ . '/header.php';
         <div class="form-group">
           <label for="hero_rating_text">Hero Rating Badge Text</label>
           <input type="text" id="hero_rating_text" name="hero_rating_text" value="<?= htmlspecialchars($settings['hero_rating_text'] ?? 'Consistent five star rating from our customers!') ?>">
+        </div>
+
+        <div class="form-group">
+          <label for="hero_image_path">Hero Media Image URL / Path</label>
+          <input type="text" id="hero_image_path" name="hero_image_path" value="<?= htmlspecialchars((string)($settings['hero_image_path'] ?? '')) ?>" placeholder="/public/images/hero-image.jpg">
+        </div>
+
+        <div class="form-group" style="padding-top:0.75rem; border-top:1px dashed #cbd5e1;">
+          <label for="hero_image_file">Upload Hero Image (PNG, JPG, WebP, SVG)</label>
+          <input type="file" id="hero_image_file" name="hero_image_file" accept="image/svg+xml,image/png,image/jpeg,image/webp">
+          <span class="form-help">Max size: 2MB. Leave blank to keep the default jam jar graphic.</span>
+          <div id="hero-image-preview-wrap" style="margin-top:0.75rem; display:none; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; padding:0.5rem; max-width:220px;">
+            <img id="hero-image-preview" src="" alt="Hero image preview" style="display:block; width:100%; max-height:180px; object-fit:contain; border-radius:6px; background:white;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:0.5rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; cursor:pointer; font-weight:600;">
+            <input type="checkbox" name="remove_hero_image" value="1">
+            <span>Remove current hero image and use the default graphic</span>
+          </label>
         </div>
 
         <div class="form-group">
@@ -381,27 +512,35 @@ require_once __DIR__ . '/header.php';
 
         <div class="form-group">
           <label for="delivery_radius_miles">Delivery Radius (Miles)</label>
-          <input type="number" id="delivery_radius_miles" name="delivery_radius_miles" value="<?= htmlspecialchars($settings['delivery_radius_miles'] ?? '18') ?>">
+          <select id="delivery_radius_miles" name="delivery_radius_miles">
+            <?php foreach ([5, 10, 15, 20, 25, 30, 35, 40, 45, 50] as $radius): ?>
+              <option value="<?= htmlspecialchars((string)$radius, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= (string)$radius === (string)($settings['delivery_radius_miles'] ?? '20') ? 'selected' : '' ?>><?= htmlspecialchars((string)$radius, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> miles</option>
+            <?php endforeach; ?>
+          </select>
         </div>
 
         <div class="form-group">
-          <label for="supported_zip_codes">Supported Flathead Valley ZIP Codes (JSON format)</label>
-          <textarea id="supported_zip_codes" name="supported_zip_codes" rows="3"><?= htmlspecialchars($settings['supported_zip_codes'] ?? '["59901", "59902", "59903", "59904", "59911", "59912", "59937"]') ?></textarea>
+          <input type="hidden" id="supported_cities" name="supported_cities" value="<?= htmlspecialchars($supportedCitiesFieldValue, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>">
+          <div style="margin-bottom:0.5rem; font-size:0.9rem; font-weight:600; color:#0f172a;">
+            List of Cities within <span id="delivery-radius-label"><?= htmlspecialchars((string)($settings['delivery_radius_miles'] ?? '20'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?></span> miles
+          </div>
+          <div id="delivery-city-preview" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem;"></div>
         </div>
       </div>
 
       <div class="admin-card">
         <h2 class="admin-card-title" style="margin-bottom:1.25rem;">Navigation Links Configuration</h2>
-        <div class="form-group">
+        <div class="form-group" id="nav-links-config-group">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem; margin-bottom:0.75rem;">
             <label style="margin:0; font-weight:600;">Main Navigation Links</label>
+            <button type="button" id="add-nav-item-btn" class="btn-secondary" style="padding:0.45rem 0.8rem; font-size:0.8rem;">Add menu item</button>
           </div>
 
           <?php foreach ($navigationConfig as $index => $navItem): ?>
             <?php $navLabel = trim((string)($navItem['label'] ?? '')) ?: 'Navigation Link'; ?>
             <?php $navUrl = trim((string)($navItem['url'] ?? './shop.html')); ?>
             <?php $navVisible = !array_key_exists('visible', $navItem) || (bool)$navItem['visible']; ?>
-            <div style="display:grid; grid-template-columns: 1.5fr 1fr auto; gap:0.75rem; align-items:center; margin-bottom:0.75rem; padding:0.75rem; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
+            <div class="nav-item-row" style="display:grid; grid-template-columns: 1.5fr 1fr auto auto auto; gap:0.75rem; align-items:center; margin-bottom:0.75rem; padding:0.75rem; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;">
               <input type="text" name="nav_label[]" value="<?= htmlspecialchars($navLabel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" aria-label="Navigation label">
               <select name="nav_url[]" aria-label="Navigation link destination">
                 <?php foreach ($promoLinkOptions as $pageValue => $pageLabel): ?>
@@ -412,6 +551,11 @@ require_once __DIR__ . '/header.php';
                 <input type="checkbox" name="nav_visible[]" value="<?= htmlspecialchars((string)$index, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>" <?= $navVisible ? 'checked' : '' ?>>
                 Show
               </label>
+              <div style="display:flex; gap:0.4rem;">
+                <button type="button" class="btn-secondary" data-nav-move="up" aria-label="Move menu item up" style="padding:0.4rem 0.55rem; font-size:0.8rem;">↑</button>
+                <button type="button" class="btn-secondary" data-nav-move="down" aria-label="Move menu item down" style="padding:0.4rem 0.55rem; font-size:0.8rem;">↓</button>
+              </div>
+              <button type="button" class="btn-secondary" data-remove-nav-item="true" style="padding:0.45rem 0.7rem; font-size:0.8rem;">Remove</button>
             </div>
           <?php endforeach; ?>
           <span class="form-help">Use the checkboxes to hide or show each main navigation item on the storefront.</span>
@@ -436,6 +580,224 @@ require_once __DIR__ . '/header.php';
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    const deliveryRadiusCityMap = {
+      5: ["Kalispell", "Evergreen", "Columbia Heights", "Batavia"],
+      10: ["Kalispell", "Evergreen", "Columbia Heights", "Somers", "Creston", "Batavia", "Whitefish"],
+      15: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Somers", "Creston", "Kila", "Evergreen", "Columbia Heights"],
+      20: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Lakeside", "Somers", "Creston", "Kila", "Marion", "Rollins", "Hungry Horse", "Coram", "Ferndale", "Swan River", "Woods Bay", "Evergreen"],
+      25: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Lakeside", "Somers", "Creston", "Kila", "Marion", "Rollins", "Hungry Horse", "Coram", "Ferndale", "Swan River", "Woods Bay", "Evergreen"],
+      30: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Marion", "Ferndale", "Swan River", "Woods Bay", "Rollins", "Creston", "Kila", "Lakeside", "Somers", "Hungry Horse", "Coram", "Martin City", "West Glacier", "Big Arm", "Dayton", "Olney", "Bear Dance", "Apgar", "Swan Lake", "Elmo", "Nyack", "Niarada"],
+      35: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Marion", "Ferndale", "Swan River", "Woods Bay", "Rollins", "Creston", "Kila", "Lakeside", "Somers", "Hungry Horse", "Coram", "Martin City", "West Glacier", "Big Arm", "Dayton", "Olney", "Bear Dance", "Apgar", "Swan Lake", "Elmo", "Nyack", "Niarada"],
+      40: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Marion", "Ferndale", "Swan River", "Woods Bay", "Rollins", "Bear Dance", "Olney", "Dayton", "Proctor", "Elmo", "West Glacier", "Lake Mary Ronan", "Polson", "Stryker", "Polebridge", "Happys Inn", "Trego", "Lakeside", "Somers", "Hungry Horse", "Coram", "Martin City", "Kila", "Creston", "Evergreen", "Columbia Heights", "Big Arm", "Ronan"],
+      45: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Marion", "Ferndale", "Swan River", "Woods Bay", "Rollins", "Bear Dance", "Olney", "Dayton", "Proctor", "Elmo", "West Glacier", "Lake Mary Ronan", "Polson", "Stryker", "Polebridge", "Happys Inn", "Trego", "Lakeside", "Somers", "Hungry Horse", "Coram", "Martin City", "Kila", "Creston", "Evergreen", "Columbia Heights", "Big Arm", "Ronan"],
+      50: ["Kalispell", "Whitefish", "Columbia Falls", "Bigfork", "Lakeside", "Somers", "Marion", "Kila", "Creston", "Hungry Horse", "Coram", "Martin City", "West Glacier", "Eureka", "Big Arm", "Rollins", "Dayton", "Elmo", "Proctor", "Swan Lake", "Ronan", "Polson", "Condon", "Olney", "Stryker", "Niarada", "Finley Point", "Woods Bay", "Bear Dance", "Happys Inn", "Nyack", "Lake Mary Ronan", "Libby"]
+    }
+
+    const deliveryRadiusSelect = document.getElementById('delivery_radius_miles')
+    const deliveryCitiesField = document.getElementById('supported_cities')
+    const deliveryCityPreview = document.getElementById('delivery-city-preview')
+    const deliveryRadiusLabel = document.getElementById('delivery-radius-label')
+
+    function normalizeCity(value) {
+      return String(value || '').trim().replace(/\s+/g, ' ')
+    }
+
+    function updateRadiusLabel() {
+      if (!deliveryRadiusLabel || !deliveryRadiusSelect) return
+      deliveryRadiusLabel.textContent = deliveryRadiusSelect.value
+    }
+
+    function updateCityPreview() {
+      if (!deliveryCityPreview || !deliveryCitiesField) return
+
+      const names = deliveryCitiesField.value
+        .split(',')
+        .map((city) => normalizeCity(city))
+        .filter(Boolean)
+
+      if (names.length === 0) {
+        deliveryCityPreview.innerHTML = '<span style="color:#64748b; font-size:0.8rem;">No cities selected.</span>'
+        return
+      }
+
+      deliveryCityPreview.innerHTML = names.map(function (city) {
+        return `
+          <span style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.35rem 0.55rem; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:999px; font-size:0.8rem; color:#0f172a;">
+            ${city}
+            <button type="button" data-remove-city="${city}" style="border:none; background:transparent; color:#334155; cursor:pointer; font-size:1rem; line-height:1; padding:0;">×</button>
+          </span>
+        `
+      }).join('')
+    }
+
+    if (deliveryRadiusSelect && deliveryCitiesField && deliveryCityPreview) {
+      const radiusValues = Object.keys(deliveryRadiusCityMap).map(Number).sort(function (a, b) { return a - b })
+      const getNearestRadius = function (radius) {
+        const target = Number(radius) || 20
+        return radiusValues.reduce(function (best, current) {
+          return Math.abs(current - target) < Math.abs(best - target) ? current : best
+        }, radiusValues[0])
+      }
+
+      const syncCitiesForRadius = function (radius) {
+        const nearestRadius = getNearestRadius(radius)
+        const chosen = deliveryRadiusCityMap[nearestRadius] || []
+        deliveryCitiesField.value = chosen.join(', ')
+        updateRadiusLabel()
+        updateCityPreview()
+      }
+
+      deliveryRadiusSelect.addEventListener('change', function () {
+        syncCitiesForRadius(deliveryRadiusSelect.value)
+      })
+
+      deliveryCitiesField.addEventListener('input', updateCityPreview)
+      updateRadiusLabel()
+      deliveryCityPreview.addEventListener('click', function (event) {
+        const removeBtn = event.target.closest('[data-remove-city]')
+        if (!removeBtn) return
+
+        const cityToRemove = removeBtn.getAttribute('data-remove-city')
+        const remaining = deliveryCitiesField.value
+          .split(',')
+          .map(function (city) {
+            return normalizeCity(city)
+          })
+          .filter(function (city) {
+            return city && city !== cityToRemove
+          })
+
+        deliveryCitiesField.value = remaining.join(', ')
+        updateCityPreview()
+      })
+
+      updateCityPreview()
+    }
+
+    const heroImageInput = document.getElementById('hero_image_file')
+    const heroImagePreviewWrap = document.getElementById('hero-image-preview-wrap')
+    const heroImagePreview = document.getElementById('hero-image-preview')
+    const heroImagePathInput = document.getElementById('hero_image_path')
+
+    if (heroImageInput && heroImagePreview && heroImagePreviewWrap) {
+      const showHeroImagePreview = function (src) {
+        if (!src) {
+          heroImagePreviewWrap.style.display = 'none'
+          heroImagePreview.src = ''
+          return
+        }
+        heroImagePreview.src = src
+        heroImagePreviewWrap.style.display = 'block'
+      }
+
+      const savedHeroImagePath = heroImagePathInput && heroImagePathInput.value ? heroImagePathInput.value.trim() : ''
+      if (savedHeroImagePath) {
+        showHeroImagePreview(savedHeroImagePath)
+      }
+
+      heroImageInput.addEventListener('change', function () {
+        const file = this.files && this.files[0]
+        if (!file) {
+          if (savedHeroImagePath) {
+            showHeroImagePreview(savedHeroImagePath)
+          }
+          return
+        }
+        const reader = new FileReader()
+        reader.onload = function (event) {
+          showHeroImagePreview(String(event.target && event.target.result ? event.target.result : ''))
+        }
+        reader.readAsDataURL(file)
+      })
+    }
+
+    const addNavBtn = document.getElementById('add-nav-item-btn')
+    const navConfigGroup = document.getElementById('nav-links-config-group')
+
+    function reindexNavRows() {
+      if (!navConfigGroup) return
+      const rows = navConfigGroup.querySelectorAll('.nav-item-row')
+      rows.forEach(function (row, index) {
+        const visibleInput = row.querySelector('input[name="nav_visible[]"]')
+        if (visibleInput) {
+          visibleInput.value = String(index)
+        }
+      })
+    }
+
+    if (navConfigGroup) {
+      navConfigGroup.addEventListener('click', function (event) {
+        const removeBtn = event.target.closest('[data-remove-nav-item="true"]')
+        if (removeBtn) {
+          const row = removeBtn.closest('.nav-item-row')
+          if (row) {
+            row.remove()
+            reindexNavRows()
+          }
+          return
+        }
+
+        const moveBtn = event.target.closest('[data-nav-move]')
+        if (moveBtn) {
+          const row = moveBtn.closest('.nav-item-row')
+          if (!row) return
+          const rows = Array.from(navConfigGroup.querySelectorAll('.nav-item-row'))
+          const currentIndex = rows.indexOf(row)
+          const direction = moveBtn.getAttribute('data-nav-move') === 'up' ? -1 : 1
+          const nextIndex = currentIndex + direction
+          if (nextIndex < 0 || nextIndex >= rows.length) return
+          const targetRow = rows[nextIndex]
+          if (direction < 0) {
+            navConfigGroup.insertBefore(row, targetRow)
+          } else {
+            navConfigGroup.insertBefore(targetRow, row)
+          }
+          reindexNavRows()
+        }
+      })
+    }
+
+    if (addNavBtn && navConfigGroup) {
+      addNavBtn.addEventListener('click', function () {
+        const rows = navConfigGroup.querySelectorAll('.nav-item-row')
+        const row = document.createElement('div')
+        row.className = 'nav-item-row'
+        row.style.display = 'grid'
+        row.style.gridTemplateColumns = '1.5fr 1fr auto auto auto'
+        row.style.gap = '0.75rem'
+        row.style.alignItems = 'center'
+        row.style.marginBottom = '0.75rem'
+        row.style.padding = '0.75rem'
+        row.style.border = '1px solid #e2e8f0'
+        row.style.borderRadius = '8px'
+        row.style.background = '#f8fafc'
+
+        const options = `<?= htmlspecialchars(json_encode(array_keys($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>`
+        const optionList = JSON.parse(options)
+        const selectMarkup = optionList.map(function (value) {
+          const label = <?= json_encode(array_values($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>[optionList.indexOf(value)]
+          return `<option value="${value}" ${value === './shop.html' ? 'selected' : ''}>${label}</option>`
+        }).join('')
+
+        row.innerHTML = `
+          <input type="text" name="nav_label[]" value="" placeholder="Menu label" aria-label="Navigation label">
+          <select name="nav_url[]" aria-label="Navigation link destination">${selectMarkup}</select>
+          <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.85rem; margin:0; white-space:nowrap;">
+            <input type="checkbox" name="nav_visible[]" value="${rows.length}" checked>
+            Show
+          </label>
+          <div style="display:flex; gap:0.4rem;">
+            <button type="button" class="btn-secondary" data-nav-move="up" aria-label="Move menu item up" style="padding:0.4rem 0.55rem; font-size:0.8rem;">↑</button>
+            <button type="button" class="btn-secondary" data-nav-move="down" aria-label="Move menu item down" style="padding:0.4rem 0.55rem; font-size:0.8rem;">↓</button>
+          </div>
+          <button type="button" class="btn-secondary" data-remove-nav-item="true" style="padding:0.45rem 0.7rem; font-size:0.8rem;">Remove</button>
+        `
+
+        navConfigGroup.appendChild(row)
+        reindexNavRows()
+      })
+    }
+
     const addBtn = document.getElementById('add-hero-cta-btn')
     const list = document.getElementById('hero-cta-list')
 
