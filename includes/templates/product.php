@@ -6,6 +6,8 @@ declare(strict_types=1);
  * stock status indicator, quantity adjuster, and shortcuts to include in Pack/Gift Box.
  */
 $brandName = $settings['brand_name'] ?? "Shelly's Jellys LLC";
+$deliveryFee = number_format((float)($settings['local_delivery_fee'] ?? 6.50), 2);
+$freeThreshold = number_format((float)($settings['free_delivery_threshold'] ?? 45.00), 2);
 $assetBase = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/');
 $productImage = normalize_product_image_url((string)($product['image_url'] ?? ''), (string)($product['slug'] ?? $product['name']));
 
@@ -140,7 +142,7 @@ $schemaJson = json_encode([
       </div>
       <div class="accordion-item">
         <h2>Local Pickup & Valley Delivery</h2>
-        <p>Free farmstand pickup in Kalispell or flat $6.50 doorstep delivery across the Flathead Valley (FREE on orders over $45.00).</p>
+        <p>Free farmstand pickup in Kalispell or flat $<?= htmlspecialchars($deliveryFee, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> doorstep delivery across the Flathead Valley (FREE on orders over $<?= htmlspecialchars($freeThreshold, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>).</p>
       </div>
     </div>
   </div>

@@ -417,11 +417,14 @@ class CartEngine {
     }
 
     const subtotal = this.getSubtotal()
+    const settings = window.deliverySettings || {}
+    const freeThreshold = Number(settings.freeThreshold ?? 45.0)
+    const deliveryRate = Number(settings.fee ?? 6.5)
     const deliveryFee =
       this.fulfillment.type === "delivery"
-        ? subtotal >= 45.0
+        ? subtotal >= freeThreshold
           ? 0.0
-          : 6.5
+          : deliveryRate
         : 0.0
     const tax = 0.0
     const grandTotal = subtotal + deliveryFee + tax
@@ -491,7 +494,9 @@ class CartEngine {
     if (feeEl) {
       if (this.fulfillment.type === "delivery") {
         feeEl.textContent =
-          deliveryFee === 0 ? "FREE ($45+ promo)" : `$${deliveryFee.toFixed(2)}`
+          deliveryFee === 0
+            ? `FREE ($${freeThreshold.toFixed(2)}+ promo)`
+            : `$${deliveryFee.toFixed(2)}`
       } else {
         feeEl.textContent = "FREE (Farmstand Pickup)"
       }

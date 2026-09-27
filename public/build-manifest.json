@@ -1,86 +1,86 @@
 {
-    "generated_at": "2026-09-27T13:06:57+02:00",
+    "generated_at": "2026-09-27T13:34:54+02:00",
     "total_pages": 16,
     "files": [
         {
             "file": "index.html",
-            "bytes": 23644,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 23882,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "shop.html",
-            "bytes": 17261,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 17262,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "product-huckleberry.html",
-            "bytes": 20746,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 20765,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "product-flathead-cherry.html",
-            "bytes": 20710,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 20729,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "product-pineapple-toasted-coconut.html",
-            "bytes": 20817,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 20836,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "product-raspberry.html",
-            "bytes": 20411,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 20430,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "product-rhubarb-huckleberry.html",
-            "bytes": 20819,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 20838,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "product-strawberry-vanilla-bean.html",
-            "bytes": 20662,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 20681,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "packs.html",
-            "bytes": 17030,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 17031,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "gift-box.html",
-            "bytes": 18152,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 18153,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "custom-orders.html",
-            "bytes": 19219,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 19220,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "contact.html",
-            "bytes": 18141,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 18386,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "cart.html",
-            "bytes": 15605,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 16007,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "checkout.html",
-            "bytes": 22251,
-            "generated_at": "2026-09-27 13:06:57"
+            "bytes": 22889,
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "sitemap.xml",
             "bytes": 2263,
-            "generated_at": "2026-09-27 13:06:57"
+            "generated_at": "2026-09-27 13:34:54"
         },
         {
             "file": "robots.txt",
             "bytes": 61,
-            "generated_at": "2026-09-27 13:06:57"
+            "generated_at": "2026-09-27 13:34:54"
         }
     ]
 }

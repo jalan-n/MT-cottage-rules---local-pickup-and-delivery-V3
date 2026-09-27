@@ -10,6 +10,10 @@ $pickupAddress = $settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispel
 $deliveryFee   = number_format((float)($settings['local_delivery_fee'] ?? 6.50), 2);
 $freeThreshold = number_format((float)($settings['free_delivery_threshold'] ?? 45.00), 2);
 $deliveryRadiusMiles = trim((string)($settings['delivery_radius_miles'] ?? '20')) ?: '20';
+$deliveryCities = get_supported_city_names();
+if ($deliveryCities === []) {
+  $deliveryCities = ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Lakeside', 'Somers', 'Creston', 'Kila'];
+}
 $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/');
 ?>
 <section class="page-header text-center">
@@ -102,3 +106,12 @@ $assetBase     = rtrim(getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food/public', '/
     </div>
   </aside>
 </div>
+
+<script>
+  window.deliverySettings = {
+    fee: <?= json_encode((float)($settings['local_delivery_fee'] ?? 6.50), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
+    freeThreshold: <?= json_encode((float)($settings['free_delivery_threshold'] ?? 45.00), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
+    cityNames: <?= json_encode($deliveryCities, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>,
+    radiusMiles: <?= json_encode($deliveryRadiusMiles, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>
+  };
+</script>

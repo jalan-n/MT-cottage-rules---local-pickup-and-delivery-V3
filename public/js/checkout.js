@@ -152,11 +152,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
+    const settings = window.deliverySettings || {}
     const subtotal = window.cartEngine.getSubtotal()
     const isDelivery =
       document.querySelector('input[name="fulfillment_type"]:checked')
         ?.value === "delivery"
-    const deliveryFee = isDelivery ? (subtotal >= 45.0 ? 0.0 : 6.5) : 0.0
+    const freeThreshold = Number(settings.freeThreshold ?? 45.0)
+    const deliveryRate = Number(settings.fee ?? 6.5)
+    const deliveryFee = isDelivery
+      ? subtotal >= freeThreshold
+        ? 0.0
+        : deliveryRate
+      : 0.0
     const tax = 0.0
     const total = subtotal + deliveryFee + tax
 
@@ -180,7 +187,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (deliveryEl) {
       if (isDelivery) {
         deliveryEl.textContent =
-          deliveryFee === 0 ? "FREE ($45+ promo)" : `$${deliveryFee.toFixed(2)}`
+          deliveryFee === 0
+            ? `FREE ($${freeThreshold.toFixed(2)}+ promo)`
+            : `$${deliveryFee.toFixed(2)}`
       } else {
         deliveryEl.textContent = "FREE"
       }

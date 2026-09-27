@@ -772,8 +772,8 @@ require_once __DIR__ . '/header.php';
         row.style.borderRadius = '8px'
         row.style.background = '#f8fafc'
 
-        const options = `<?= htmlspecialchars(json_encode(array_keys($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>`
-        const optionList = JSON.parse(options)
+        const options = `<?= htmlspecialchars(json_encode(array_keys($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>`;
+        const optionList = JSON.parse(options);
         const selectMarkup = optionList.map(function (value) {
           const label = <?= json_encode(array_values($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>[optionList.indexOf(value)]
           return `<option value="${value}" ${value === './shop.html' ? 'selected' : ''}>${label}</option>`
@@ -800,42 +800,50 @@ require_once __DIR__ . '/header.php';
 
     const addBtn = document.getElementById('add-hero-cta-btn')
     const list = document.getElementById('hero-cta-list')
+    const heroCtaOptionValues = <?= json_encode(array_keys($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+    const heroCtaOptionLabels = <?= json_encode(array_values($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 
-    if (addBtn && list) {
-      addBtn.addEventListener('click', function () {
-        const row = document.createElement('div')
-        row.className = 'hero-cta-row'
-        row.style.display = 'grid'
-        row.style.gridTemplateColumns = '1.4fr 1.3fr auto auto'
-        row.style.gap = '0.65rem'
-        row.style.alignItems = 'center'
-        row.style.padding = '0.75rem'
-        row.style.border = '1px solid #e2e8f0'
-        row.style.borderRadius = '8px'
-        row.style.background = '#f8fafc'
-        const options = `<?= htmlspecialchars(json_encode(array_keys($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>`
-        const optionList = JSON.parse(options)
-        const selectMarkup = optionList.map(function (value) {
-          const label = <?= json_encode(array_values($promoLinkOptions), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>[optionList.indexOf(value)]
-          return `<option value="${value}" ${value === './shop.html' ? 'selected' : ''}>${label}</option>`
-        }).join('')
+    function buildHeroCtaRow(index, label = '', url = './shop.html', visible = true) {
+      const row = document.createElement('div')
+      row.className = 'hero-cta-row'
+      row.style.display = 'grid'
+      row.style.gridTemplateColumns = '1.4fr 1.3fr auto auto'
+      row.style.gap = '0.65rem'
+      row.style.alignItems = 'center'
+      row.style.padding = '0.75rem'
+      row.style.border = '1px solid #e2e8f0'
+      row.style.borderRadius = '8px'
+      row.style.background = '#f8fafc'
 
-        row.innerHTML = `
-          <input type="text" name="hero_cta_label[]" value="" placeholder="Button name">
-          <select name="hero_cta_url[]">${selectMarkup}</select>
-          <label style="display:flex; align-items:center; gap:0.35rem; margin:0; font-size:0.8rem; white-space:nowrap;">
-            <input type="checkbox" name="hero_cta_visible[]" value="${list.children.length}" checked>
-            Show
-          </label>
-          <button type="button" class="btn-secondary" data-remove-cta="true" style="padding:0.45rem 0.75rem;">Remove</button>
-        `
+      const selectMarkup = heroCtaOptionValues.map(function (value, optionIndex) {
+        const selected = value === url ? 'selected' : ''
+        return `<option value="${value}" ${selected}>${heroCtaOptionLabels[optionIndex]}</option>`
+      }).join('')
 
-        const removeBtn = row.querySelector('[data-remove-cta="true"]')
+      row.innerHTML = `
+        <input type="text" name="hero_cta_label[]" value="${label ? label.replace(/"/g, '&quot;') : ''}" placeholder="Button name">
+        <select name="hero_cta_url[]">${selectMarkup}</select>
+        <label style="display:flex; align-items:center; gap:0.35rem; margin:0; font-size:0.8rem; white-space:nowrap;">
+          <input type="checkbox" name="hero_cta_visible[]" value="${index}" ${visible ? 'checked' : ''}>
+          Show
+        </label>
+        <button type="button" class="btn-secondary" data-remove-cta="true" style="padding:0.45rem 0.75rem;">Remove</button>
+      `
+
+      const removeBtn = row.querySelector('[data-remove-cta="true"]')
+      if (removeBtn) {
         removeBtn.addEventListener('click', function () {
           row.remove()
         })
+      }
 
-        list.appendChild(row)
+      return row
+    }
+
+    if (addBtn && list) {
+      addBtn.addEventListener('click', function () {
+        const nextIndex = list.querySelectorAll('.hero-cta-row').length
+        list.appendChild(buildHeroCtaRow(nextIndex))
       })
     }
 

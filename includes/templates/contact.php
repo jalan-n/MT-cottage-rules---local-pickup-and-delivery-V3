@@ -10,6 +10,14 @@ $pickupPhone   = trim((string)($settings['pickup_phone'] ?? '(406) 555-0192'));
 $pickupEmail   = trim((string)($settings['pickup_email'] ?? 'mtshellysjellys@gmail.com'));
 $mapsUrl       = 'https://maps.google.com/?q=' . urlencode($pickupAddress);
 $brandName     = $settings['brand_name'] ?? "Shelly's Jellys LLC";
+$deliveryFee  = (float)($settings['local_delivery_fee'] ?? 6.50);
+$freeThreshold = (float)($settings['free_delivery_threshold'] ?? 45.00);
+$deliveryRadiusMiles = trim((string)($settings['delivery_radius_miles'] ?? '20')) ?: '20';
+$deliveryCities = get_supported_city_names();
+if ($deliveryCities === []) {
+  $deliveryCities = ['Kalispell', 'Whitefish', 'Columbia Falls', 'Bigfork', 'Lakeside', 'Somers', 'Creston', 'Kila'];
+}
+$deliveryCityList = implode(', ', $deliveryCities);
 ?>
 <section class="page-header text-center">
   <h1>Contact Shelly's Jellys</h1>
@@ -43,7 +51,7 @@ $brandName     = $settings['brand_name'] ?? "Shelly's Jellys LLC";
 
       <div class="delivery-area-block">
         <h3>Local Delivery Zones</h3>
-        <p>Doorstep delivery across Kalispell, Whitefish, Columbia Falls, Bigfork, Somers, and Lakeside ($6.50 flat fee, or FREE on orders over $45.00).</p>
+        <p>Doorstep delivery across <?= htmlspecialchars($deliveryCityList, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> ($<?= htmlspecialchars(number_format($deliveryFee, 2), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?> flat fee, or FREE on orders over $<?= htmlspecialchars(number_format($freeThreshold, 2), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') ?>).</p>
       </div>
     </div>
   </div>
