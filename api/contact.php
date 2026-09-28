@@ -31,7 +31,6 @@ if (!is_array($data)) {
 // Honeypot spam trap detection
 $honeypot = trim((string)($data['website_url_hp'] ?? ($data['website'] ?? ($data['hp_field'] ?? ''))));
 if (!empty($honeypot)) {
-    // Silently discard bot submission
     echo json_encode([
         'success' => true,
         'message' => 'Thank you for reaching out. We have received your inquiry and will be in touch shortly.'
@@ -39,13 +38,14 @@ if (!empty($honeypot)) {
     exit;
 }
 
-$name        = trim((string)($data['name'] ?? ''));
-$email       = trim((string)($data['email'] ?? ''));
-$phone       = trim((string)($data['phone'] ?? ''));
+$name = trim((string)($data['name'] ?? ($data['full_name'] ?? '')));
+$email = trim((string)($data['email'] ?? ''));
+$phone = trim((string)($data['phone'] ?? ''));
 $inquiryType = trim((string)($data['inquiry_type'] ?? 'general'));
-$eventDate   = trim((string)($data['event_date'] ?? ''));
-$estJars     = trim((string)($data['estimated_jars'] ?? ''));
-$message     = trim((string)($data['message'] ?? ''));
+$eventDate = trim((string)($data['event_date'] ?? ''));
+$estJars = trim((string)($data['estimated_jars'] ?? ''));
+$message = trim((string)($data['message'] ?? ''));
+$address = trim((string)($data['address'] ?? ''));
 
 if (empty($name) || empty($email) || empty($message)) {
     http_response_code(422);
@@ -53,29 +53,38 @@ if (empty($name) || empty($email) || empty($message)) {
     exit;
 }
 
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+$email = normalize_email_address($email);
+if ($email === null) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Please provide a valid email address.']);
     exit;
 }
 
-$subject = "[Inquiry: " . ucfirst(str_replace('_', ' ', $inquiryType)) . "] Message from {$name}";
+$submissionKey = md5($email . '|' . $name . '|' . $message . '|' . $inquiryType . '|' . date('YmdHis'));
+if (is_duplicate_submission('contact_' . $submissionKey, 1800)) {
+    http_response_code(429);
+    echo json_encode(['success' => false, 'error' => 'This message was already submitted. Please wait a moment and try again.']);
+    exit;
+}
 
-$body = "
-<h2>New Inbound Inquiry</h2>
-<p><strong>Name:</strong> " . htmlspecialchars($name) . "</p>
-<p><strong>Email:</strong> " . htmlspecialchars($email) . "</p>
-<p><strong>Phone:</strong> " . htmlspecialchars($phone) . "</p>
-<p><strong>Inquiry Type:</strong> " . htmlspecialchars(ucfirst(str_replace('_', ' ', $inquiryType))) . "</p>
-" . (!empty($eventDate) ? "<p><strong>Target Event Date:</strong> " . htmlspecialchars($eventDate) . "</p>" : "") . "
-" . (!empty($estJars) ? "<p><strong>Estimated Jars:</strong> " . htmlspecialchars($estJars) . "</p>" : "") . "
-<hr>
-<h3>Message:</h3>
-<p>" . nl2br(htmlspecialchars($message)) . "</p>
-";
+$formPayload = [
+    'customer_email' => $email,
+    'customer_name' => $name,
+    'phone' => $phone,
+    'address' => $address,
+    'estimated_jars' => $estJars,
+    'event_date' => $eventDate,
+    'message' => $message,
+];
 
-send_admin_notification($subject, $body, $email);
+$sent = send_form_submission_email($formPayload, $inquiryType);
+if (!$sent) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'error' => 'Your message could not be delivered at this time. Please try again later.']);
+    exit;
+}
 
+http_response_code(200);
 echo json_encode([
     'success' => true,
     'message' => 'Thank you for reaching out. We have received your inquiry and will be in touch shortly.'

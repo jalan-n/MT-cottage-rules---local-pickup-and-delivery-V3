@@ -142,6 +142,7 @@ foreach ($products as $productRow) {
 
   <script>
     window.SJ_PRODUCT_CATALOG = <?= json_encode($productCatalog, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES) ?>;
+    window.APP_BASE_PATH = <?= json_encode(function_exists('app_base_path') ? app_base_path() : (trim((string)(getenv('APP_BASE_PATH') ?: getenv('APP_ASSET_BASE') ?: '/SJ-cottage-food')))) ?>;
   </script>
 
   <!-- Google Fonts: Caveat for cursive brand mark, Outfit for friendly geometric headings -->

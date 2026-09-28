@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
+
+require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/db.php';
 
 /**
@@ -436,48 +440,357 @@ function calculate_and_validate_cart(array $items, string $fulfillmentType, ?str
 }
 
 /**
- * Dispatch notification email to both admin emails
+ * Normalize and validate email addresses before sending.
+ */
+function normalize_email_address(?string $value): ?string {
+    $email = trim((string)($value ?? ''));
+    if ($email === '') {
+        return null;
+    }
+
+    $email = filter_var($email, FILTER_SANITIZE_EMAIL);
+    return filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+}
+
+/**
+ * Return the configured SMTP mail settings from environment variables.
+ */
+function get_smtp_config(): array {
+    $host = trim((string)(getenv('SMTP_HOST') ?: getenv('MAIL_HOST') ?: ''));
+    $port = (int)(getenv('SMTP_PORT') ?: 587);
+    $username = trim((string)(getenv('SMTP_USERNAME') ?: getenv('MAIL_USERNAME') ?: ''));
+    $password = trim((string)(getenv('SMTP_PASSWORD') ?: getenv('MAIL_PASSWORD') ?: ''));
+    $encryption = strtolower(trim((string)(getenv('SMTP_ENCRYPTION') ?: getenv('MAIL_ENCRYPTION') ?: 'tls')));
+    $fromName = trim((string)(getenv('SMTP_FROM_NAME') ?: getenv('MAIL_FROM_NAME') ?: "Shelly's Jellys"));
+    $fromEmail = normalize_email_address((string)(getenv('SMTP_FROM_EMAIL') ?: getenv('MAIL_FROM_ADDRESS') ?: 'noreply@localhost'));
+
+    if ($encryption === 'none' || $encryption === 'false') {
+        $encryption = '';
+    }
+
+    return [
+        'host' => $host,
+        'port' => $port,
+        'username' => $username,
+        'password' => $password,
+        'encryption' => $encryption,
+        'from_name' => $fromName !== '' ? $fromName : "Shelly's Jellys",
+        'from_email' => $fromEmail ?? 'noreply@localhost',
+    ];
+}
+
+/**
+ * Log email delivery failures without exposing secrets or stack traces to customers.
+ */
+function log_email_error(string $context, string $message, ?Throwable $exception = null): void {
+    $logDir = dirname(__DIR__) . '/data/email_logs';
+    if (!is_dir($logDir)) {
+        @mkdir($logDir, 0755, true);
+    }
+
+    $detail = $message;
+    if ($exception instanceof Throwable) {
+        $detail .= ' | ' . $exception->getMessage();
+    }
+
+    $entry = sprintf("[%s] %s | %s\n", date('Y-m-d H:i:s'), $context, $detail);
+    @file_put_contents($logDir . '/email-errors.log', $entry, FILE_APPEND | LOCK_EX);
+    error_log($context . ': ' . $detail);
+}
+
+/**
+ * Build a PHPMailer instance from env-backed SMTP configuration.
+ */
+function create_smtp_mailer(): ?PHPMailer {
+    $config = get_smtp_config();
+    if ($config['host'] === '') {
+        log_email_error('SMTP configuration missing', 'SMTP_HOST is not set in the environment.');
+        return null;
+    }
+
+    $mailer = new PHPMailer(true);
+    $mailer->isSMTP();
+    $mailer->Host = $config['host'];
+    $mailer->Port = $config['port'];
+    $mailer->SMTPAuth = $config['username'] !== '' && $config['password'] !== '';
+    $mailer->Username = $config['username'];
+    $mailer->Password = $config['password'];
+
+    if ($config['encryption'] === 'tls') {
+        $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+    } elseif ($config['encryption'] === 'ssl') {
+        $mailer->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+    } elseif ($config['encryption'] !== '') {
+        $mailer->SMTPSecure = $config['encryption'];
+    }
+
+    $mailer->SMTPAutoTLS = true;
+    $mailer->Timeout = 20;
+    $mailer->CharSet = 'UTF-8';
+    $mailer->Encoding = 'base64';
+    $mailer->setFrom($config['from_email'], $config['from_name']);
+    return $mailer;
+}
+
+/**
+ * Send a single transactional email through PHPMailer.
+ */
+function send_mail_message(
+    array $recipients,
+    string $subject,
+    string $htmlBody,
+    string $plainText = '',
+    ?string $replyToEmail = null,
+    ?string $replyToName = null
+): bool {
+    $cleanRecipients = [];
+    foreach ($recipients as $recipient) {
+        $email = normalize_email_address((string)$recipient);
+        if ($email !== null) {
+            $cleanRecipients[] = $email;
+        }
+    }
+
+    if ($cleanRecipients === []) {
+        log_email_error('Mailer recipients', 'No valid recipient addresses were provided for email delivery.');
+        return false;
+    }
+
+    $mailer = create_smtp_mailer();
+    if ($mailer === null) {
+        return false;
+    }
+
+    try {
+        foreach (array_values(array_unique($cleanRecipients)) as $recipient) {
+            $mailer->addAddress($recipient);
+        }
+
+        if ($replyToEmail !== null) {
+            $replyEmail = normalize_email_address($replyToEmail);
+            if ($replyEmail !== null) {
+                $mailer->addReplyTo($replyEmail, $replyToName ?: $replyEmail);
+            }
+        }
+
+        $mailer->Subject = $subject;
+        $mailer->isHTML(true);
+        $mailer->Body = $htmlBody;
+        $mailer->AltBody = $plainText !== '' ? $plainText : strip_tags($htmlBody);
+
+        $mailer->send();
+        return true;
+    } catch (Exception $e) {
+        log_email_error('PHPMailer send failed', $subject, $e);
+        return false;
+    }
+}
+
+/**
+ * Get a deduplicated list of admin and kitchen recipients from the DB settings.
+ */
+function get_contact_recipient_emails(): array {
+    $settings = get_site_settings();
+    $primary = normalize_email_address((string)($settings['admin_email_primary'] ?? ''));
+    $secondary = normalize_email_address((string)($settings['admin_email_secondary'] ?? ''));
+    $valid = [];
+
+    foreach ([$primary, $secondary] as $email) {
+        if ($email !== null) {
+            $valid[] = $email;
+        }
+    }
+
+    if ($valid === []) {
+        log_email_error('Recipient validation', 'Primary Administrator Email / Secondary Kitchen Notification Email are missing or invalid.');
+    }
+
+    return array_values(array_unique($valid));
+}
+
+/**
+ * Quick duplicate-submission guard for public forms.
+ */
+function is_duplicate_submission(string $key, int $ttlSeconds = 1800): bool {
+    $dir = dirname(__DIR__) . '/data/email_logs';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+
+    $file = $dir . '/form_dedupe.json';
+    $entries = [];
+    if (file_exists($file)) {
+        $decoded = json_decode((string)@file_get_contents($file), true);
+        if (is_array($decoded)) {
+            $entries = $decoded;
+        }
+    }
+
+    $now = time();
+    foreach ($entries as $fingerprint => $timestamp) {
+        if (is_numeric($timestamp) && ($now - (int)$timestamp) > $ttlSeconds) {
+            unset($entries[$fingerprint]);
+        }
+    }
+
+    if (isset($entries[$key])) {
+        return true;
+    }
+
+    $entries[$key] = $now;
+    @file_put_contents($file, json_encode($entries, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    return false;
+}
+
+/**
+ * Legacy admin notification helper used by existing modules.
  */
 function send_admin_notification(string $subject, string $messageHtml, string $replyToEmail = ''): bool {
     $settings = get_site_settings();
-    $primary = $settings['admin_email_primary'] ?? 'orders@wildandorchardjam.com';
-    $secondary = $settings['admin_email_secondary'] ?? 'kitchen@wildandorchardjam.com';
+    $primary = normalize_email_address((string)($settings['admin_email_primary'] ?? ''));
+    $secondary = normalize_email_address((string)($settings['admin_email_secondary'] ?? ''));
+    $recipients = array_values(array_filter([$primary, $secondary], fn($value) => $value !== null));
 
-    $recipients = array_filter([$primary, $secondary]);
-    $to = implode(', ', $recipients);
-
-    $headers = [
-        'MIME-Version: 1.0',
-        'Content-type: text/html; charset=utf-8',
-        'From: ' . ($settings['brand_name'] ?? 'Wild & Orchard Jams') . ' <no-reply@wildandorchardjam.com>',
-    ];
-
-    if (!empty($replyToEmail) && filter_var($replyToEmail, FILTER_VALIDATE_EMAIL)) {
-        $headers[] = "Reply-To: {$replyToEmail}";
+    if ($recipients === []) {
+        log_email_error('Admin recipient validation', 'No valid admin notification recipients configured.');
+        return false;
     }
 
-    // Log email dispatch for server environments without active sendmail
-    $logDir = dirname(__DIR__) . '/data/email_logs';
-    if (!is_dir($logDir)) {
-        mkdir($logDir, 0755, true);
-    }
-    $logFile = $logDir . '/dispatched_' . date('Y-m-d') . '.log';
-    $logEntry = sprintf(
-        "[%s] TO: %s | SUBJECT: %s\n%s\n----------------------------------------\n",
-        date('Y-m-d H:i:s'),
-        $to,
-        $subject,
-        strip_tags(str_replace('<br>', "\n", $messageHtml))
-    );
-    file_put_contents($logFile, $logEntry, FILE_APPEND);
+    return send_mail_message($recipients, $subject, $messageHtml, strip_tags($messageHtml), $replyToEmail);
+}
 
-    // If sendmail binary exists on the system, dispatch via native mail()
-    $hasSendmail = file_exists('/usr/sbin/sendmail') || file_exists('/usr/bin/sendmail');
-    if ($hasSendmail && function_exists('mail')) {
-        return @mail($to, $subject, $messageHtml, implode("\r\n", $headers));
+/**
+ * Send a customer confirmation email plus admin notification emails for a form inquiry.
+ */
+function send_form_submission_email(array $payload, string $inquiryType = 'general'): bool {
+    $customerEmail = normalize_email_address((string)($payload['customer_email'] ?? $payload['email'] ?? ''));
+    $customerName = trim((string)($payload['customer_name'] ?? $payload['name'] ?? 'Customer'));
+    $settings = get_site_settings();
+    $primary = normalize_email_address((string)($settings['admin_email_primary'] ?? ''));
+    $secondary = normalize_email_address((string)($settings['admin_email_secondary'] ?? ''));
+    $adminRecipients = array_values(array_filter([$primary, $secondary], fn($value) => $value !== null));
+
+    if ($customerEmail === null) {
+        log_email_error('Form submission validation', 'Customer email is missing or invalid.');
+        return false;
     }
 
-    return true;
+    $customerSubject = $inquiryType === 'custom_event'
+        ? 'Thank you for your custom order request'
+        : 'Thank you for contacting Shelly\'s Jellys';
+
+    $customerHtml = '<h2>Thank you for reaching out</h2>'
+        . '<p>Hi ' . htmlspecialchars($customerName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ',</p>'
+        . '<p>We have received your message and will be in touch soon.</p>'
+        . '<p><strong>Submitted details:</strong></p>'
+        . '<ul>'
+        . '<li><strong>Name:</strong> ' . htmlspecialchars($customerName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>'
+        . '<li><strong>Email:</strong> ' . htmlspecialchars($customerEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>'
+        . (!empty($payload['phone']) ? '<li><strong>Phone:</strong> ' . htmlspecialchars((string)$payload['phone'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>' : '')
+        . (!empty($payload['estimated_jars']) ? '<li><strong>Estimated quantity:</strong> ' . htmlspecialchars((string)$payload['estimated_jars'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>' : '')
+        . (!empty($payload['event_date']) ? '<li><strong>Event date:</strong> ' . htmlspecialchars((string)$payload['event_date'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</li>' : '')
+        . '</ul>'
+        . '<p><strong>Message:</strong></p>'
+        . '<p>' . nl2br(htmlspecialchars((string)($payload['message'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>'
+        . '<p>Warmly,<br>' . htmlspecialchars((string)($settings['brand_name'] ?? "Shelly's Jellys LLC"), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+
+    $adminSubject = $inquiryType === 'custom_event'
+        ? 'New custom order request from ' . $customerName
+        : 'New contact form message from ' . $customerName;
+
+    $adminHtml = '<h2>New inquiry</h2>'
+        . '<p><strong>Customer name:</strong> ' . htmlspecialchars($customerName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<p><strong>Email:</strong> ' . htmlspecialchars($customerEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . (!empty($payload['phone']) ? '<p><strong>Phone:</strong> ' . htmlspecialchars((string)$payload['phone'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>' : '')
+        . (!empty($payload['address']) ? '<p><strong>Address:</strong> ' . htmlspecialchars((string)$payload['address'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>' : '')
+        . (!empty($payload['estimated_jars']) ? '<p><strong>Estimated quantity:</strong> ' . htmlspecialchars((string)$payload['estimated_jars'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>' : '')
+        . (!empty($payload['event_date']) ? '<p><strong>Event date:</strong> ' . htmlspecialchars((string)$payload['event_date'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>' : '')
+        . '<p><strong>Message:</strong></p>'
+        . '<p>' . nl2br(htmlspecialchars((string)($payload['message'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>';
+
+    $customerSent = send_mail_message([$customerEmail], $customerSubject, $customerHtml, strip_tags($customerHtml), $primary ?? $customerEmail, $settings['brand_name'] ?? "Shelly's Jellys LLC");
+    $adminSent = send_mail_message($adminRecipients, $adminSubject, $adminHtml, strip_tags($adminHtml), $customerEmail, $customerName);
+    return $customerSent && $adminSent;
+}
+
+/**
+ * Generate order email content for successful sales.
+ */
+function send_order_notification_email(array $order, array $customer, array $items): bool {
+    $settings = get_site_settings();
+    $primary = normalize_email_address((string)($settings['admin_email_primary'] ?? ''));
+    $secondary = normalize_email_address((string)($settings['admin_email_secondary'] ?? ''));
+    $customerEmail = normalize_email_address((string)($customer['email'] ?? ''));
+
+    if ($customerEmail === null) {
+        log_email_error('Order email validation', 'Customer email is missing or invalid for order notification.');
+        return false;
+    }
+
+    $brandName = (string)($settings['brand_name'] ?? "Shelly's Jellys LLC");
+    $phone = trim((string)($settings['pickup_phone'] ?? '(406) 555-0192'));
+    $address = trim((string)($settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901'));
+    $emailAddress = trim((string)($settings['pickup_email'] ?? 'mtshellysjellys@gmail.com'));
+
+    $orderNumber = (string)($order['order_number'] ?? 'UNKNOWN');
+    $customerName = trim((string)($customer['full_name'] ?? 'Customer'));
+    $subtotal = number_format((float)($order['subtotal'] ?? 0.0), 2);
+    $deliveryFee = number_format((float)($order['delivery_fee'] ?? 0.0), 2);
+    $total = number_format((float)($order['total_amount'] ?? 0.0), 2);
+    $lineRows = '';
+    foreach ($items as $item) {
+        $lineRows .= '<tr>'
+            . '<td style="padding:8px; border-bottom:1px solid #e5e7eb;">' . htmlspecialchars((string)($item['item_title'] ?? 'Item'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td>'
+            . '<td style="padding:8px; border-bottom:1px solid #e5e7eb; text-align:center;">' . (int)($item['quantity'] ?? 1) . '</td>'
+            . '<td style="padding:8px; border-bottom:1px solid #e5e7eb; text-align:right;">$' . number_format((float)($item['unit_price'] ?? 0.0), 2) . '</td>'
+            . '<td style="padding:8px; border-bottom:1px solid #e5e7eb; text-align:right;">$' . number_format((float)($item['line_total'] ?? 0.0), 2) . '</td>'
+            . '</tr>';
+    }
+
+    $customerText = "Hi {$customerName},\n\nThank you for purchasing our homemade jam! Please take time to look over the details of your order. Your jam will be ready in the next 2 to 3 days. One of us will contact you with information regarding your order if necessary. Don’t hesitate to get in touch with us if you have any questions.\n\nOrder Summary:\n";
+    foreach ($items as $item) {
+        $customerText .= '- ' . (string)($item['item_title'] ?? 'Item') . ' x' . (int)($item['quantity'] ?? 1) . ' @ $' . number_format((float)($item['unit_price'] ?? 0.0), 2) . "\n";
+    }
+    $customerText .= "\nSubtotal: ${$subtotal}\nDelivery: ${$deliveryFee}\nTotal: {$total}\n\nContact Us\n{$brandName}\nPhone: {$phone}\nAddress: {$address}\nEmail: {$emailAddress}\n";
+
+    $customerHtml = '<div style="font-family:Arial,sans-serif; line-height:1.6; color:#1f2937;">'
+        . '<p>Hi ' . htmlspecialchars($customerName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ',</p>'
+        . '<p>Thank you for purchasing our homemade jam! Please take time to look over the details of your order. Your jam will be ready in the next 2 to 3 days. One of us will contact you with information regarding your order if necessary. Don’t hesitate to get in touch with us if you have any questions.</p>'
+        . '<h3>Order Summary</h3>'
+        . '<table style="width:100%; border-collapse:collapse;">'
+        . '<thead><tr style="background:#f3f4f6;"><th style="padding:8px; text-align:left;">Item</th><th style="padding:8px; text-align:center;">Qty</th><th style="padding:8px; text-align:right;">Price</th><th style="padding:8px; text-align:right;">Total</th></tr></thead>'
+        . '<tbody>' . $lineRows . '</tbody>'
+        . '<tfoot><tr><td colspan="3" style="padding:8px; text-align:right;"><strong>Subtotal:</strong></td><td style="padding:8px; text-align:right;">$' . $subtotal . '</td></tr>'
+        . '<tr><td colspan="3" style="padding:8px; text-align:right;"><strong>Delivery:</strong></td><td style="padding:8px; text-align:right;">$' . $deliveryFee . '</td></tr>'
+        . '<tr><td colspan="3" style="padding:8px; text-align:right;"><strong>Total:</strong></td><td style="padding:8px; text-align:right;"><strong>$' . $total . '</strong></td></tr></tfoot>'
+        . '</table>'
+        . '<p><strong>Contact info:</strong><br>' . htmlspecialchars($brandName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>' . htmlspecialchars($phone, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>' . htmlspecialchars($address, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>' . htmlspecialchars($emailAddress, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '</div>';
+
+    $adminHtml = '<div style="font-family:Arial,sans-serif; line-height:1.6; color:#1f2937;">'
+        . '<h2>You have a new order! Order ' . htmlspecialchars($orderNumber, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</h2>'
+        . '<p><strong>Customer:</strong> ' . htmlspecialchars($customerName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<p><strong>Email:</strong> ' . htmlspecialchars($customerEmail, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<p><strong>Phone:</strong> ' . htmlspecialchars((string)($customer['phone'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<p><strong>Delivery / Pickup:</strong> ' . htmlspecialchars((string)($order['fulfillment_type'] ?? 'pickup'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<p><strong>Order date:</strong> ' . htmlspecialchars((string)($order['created_at'] ?? date('Y-m-d H:i:s')), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<p><strong>Special instructions:</strong> ' . nl2br(htmlspecialchars((string)($order['special_instructions'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>'
+        . '<table style="width:100%; border-collapse:collapse;">'
+        . '<thead><tr style="background:#f3f4f6;"><th style="padding:8px; text-align:left;">Item</th><th style="padding:8px; text-align:center;">Qty</th><th style="padding:8px; text-align:right;">Price</th><th style="padding:8px; text-align:right;">Total</th></tr></thead>'
+        . '<tbody>' . $lineRows . '</tbody>'
+        . '<tfoot><tr><td colspan="3" style="padding:8px; text-align:right;"><strong>Subtotal:</strong></td><td style="padding:8px; text-align:right;">$' . $subtotal . '</td></tr>'
+        . '<tr><td colspan="3" style="padding:8px; text-align:right;"><strong>Delivery:</strong></td><td style="padding:8px; text-align:right;">$' . $deliveryFee . '</td></tr>'
+        . '<tr><td colspan="3" style="padding:8px; text-align:right;"><strong>Total:</strong></td><td style="padding:8px; text-align:right;"><strong>$' . $total . '</strong></td></tr></tfoot>'
+        . '</table>'
+        . '<p><strong>Fulfillment details:</strong></p>'
+        . '<p>' . nl2br(htmlspecialchars((string)($order['fulfillment_summary'] ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) . '</p>'
+        . '</div>';
+
+    $adminRecipients = array_values(array_filter([$primary, $secondary], fn($value) => $value !== null));
+    $customerSent = send_mail_message([$customerEmail], 'Purchase details from Shelly’s Jellys for order ' . $orderNumber, $customerHtml, $customerText, $primary ?? $customerEmail, $brandName);
+    $adminSent = send_mail_message($adminRecipients, 'You have a new order! Order ' . $orderNumber, $adminHtml, strip_tags($adminHtml), $customerEmail, $customerName);
+
+    return $customerSent && $adminSent;
 }
 
 /**

@@ -140,9 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
         inquiry_type: 'general',
         website_url_hp: form.querySelector('input[name="website_url_hp"]').value
       };
+      const apiUrl = new URL('api/contact.php', window.location.href).toString();
 
       try {
-        const res = await fetch('/api/contact.php', {
+        const res = await fetch(apiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)

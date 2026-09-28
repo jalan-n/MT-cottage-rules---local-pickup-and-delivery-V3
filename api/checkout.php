@@ -214,13 +214,13 @@ if ($isLiveSquare) {
         exit;
     }
 
-    // Development / Sandbox simulation token check
     $squarePaymentId = 'sq_sim_' . bin2hex(random_bytes(10));
     $squareOrderId   = 'sq_ord_' . bin2hex(random_bytes(8));
     $paymentStatus   = 'paid';
 }
 
-// 5. Database Persistence with Transaction
+$idempotencyKey = hash('sha256', $orderNumber . '|' . $email . '|' . $totalAmount . '|' . $sourceId . '|' . time());
+
 $db = get_db();
 $db->beginTransaction();
 
@@ -313,78 +313,46 @@ try {
     exit;
 }
 
-// 6. Build Confirmation Email & Dispatch
 $settings = get_site_settings();
-$brandName = $settings['brand_name'] ?? 'Wild & Orchard Gourmet Jams';
-$pickupAddress = $settings['pickup_address'] ?? 'Farmstand Location';
-
-$itemRows = '';
-foreach ($validatedItems as $line) {
-    $detailsDesc = '';
-    if (!empty($line['variant_details'])) {
-        $det = json_decode($line['variant_details'], true);
-        if (isset($det['flavors']) && is_array($det['flavors'])) {
-            $detailsDesc = '<br><small style="color:#666;">Flavors: ' . htmlspecialchars(implode(', ', $det['flavors'])) . '</small>';
-        }
-    }
-    $itemRows .= sprintf(
-        "<tr>
-            <td style='padding:8px; border-bottom:1px solid #ddd;'>%s %s</td>
-            <td style='padding:8px; border-bottom:1px solid #ddd; text-align:center;'>%d</td>
-            <td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>$%s</td>
-            <td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>$%s</td>
-        </tr>",
-        htmlspecialchars($line['item_title']),
-        $detailsDesc,
-        $line['quantity'],
-        number_format($line['unit_price'], 2),
-        number_format($line['line_total'], 2)
-    );
-}
+$brandName = $settings['brand_name'] ?? "Shelly's Jellys LLC";
+$pickupAddress = $settings['pickup_address'] ?? '458 Orchard Vista Way, Kalispell, MT 59901';
+$primaryAdmin = normalize_email_address((string)($settings['admin_email_primary'] ?? ''));
+$secondaryAdmin = normalize_email_address((string)($settings['admin_email_secondary'] ?? ''));
 
 $fulfillmentSummary = $fulfillmentType === 'pickup'
-    ? "<strong>Local Pickup:</strong><br>{$pickupAddress}<br>Date: {$fulfillmentDate} ({$fulfillmentTime})"
-    : "<strong>Local Delivery:</strong><br>{$address} {$unit}<br>{$city}, {$state} {$zipCode}<br>Date: {$fulfillmentDate} ({$fulfillmentTime})";
+    ? "Local Pickup\n{$pickupAddress}\nDate: {$fulfillmentDate} ({$fulfillmentTime})"
+    : "Local Delivery\n{$address} {$unit}\n{$city}, {$state} {$zipCode}\nDate: {$fulfillmentDate} ({$fulfillmentTime})";
 
-$emailBody = "
-<h2>Order Confirmed - {$orderNumber}</h2>
-<p>Thank you for ordering with {$brandName}!</p>
-<h3>Fulfillment Information</h3>
-<p>{$fulfillmentSummary}</p>
-" . (!empty($instructions) ? "<p><strong>Notes:</strong> " . htmlspecialchars($instructions) . "</p>" : "") . "
-<h3>Order Summary</h3>
-<table style='width:100%; border-collapse:collapse;'>
-    <thead>
-        <tr style='background:#f4f4f4;'>
-            <th style='padding:8px; text-align:left;'>Item</th>
-            <th style='padding:8px; text-align:center;'>Qty</th>
-            <th style='padding:8px; text-align:right;'>Price</th>
-            <th style='padding:8px; text-align:right;'>Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        {$itemRows}
-    </tbody>
-    <tfoot>
-        <tr>
-            <td colspan='3' style='padding:8px; text-align:right;'><strong>Subtotal:</strong></td>
-            <td style='padding:8px; text-align:right;'>$" . number_format($subtotal, 2) . "</td>
-        </tr>
-        <tr>
-            <td colspan='3' style='padding:8px; text-align:right;'><strong>Delivery:</strong></td>
-            <td style='padding:8px; text-align:right;'>$" . number_format($deliveryFee, 2) . "</td>
-        </tr>
-        <tr>
-            <td colspan='3' style='padding:8px; text-align:right;'><strong>Total Paid:</strong></td>
-            <td style='padding:8px; text-align:right;'><strong>$" . number_format($totalAmount, 2) . "</strong></td>
-        </tr>
-    </tfoot>
-</table>
-<p><small>Payment ID: {$squarePaymentId}</small></p>
-";
+$orderRecord = [
+    'order_number' => $orderNumber,
+    'subtotal' => $subtotal,
+    'delivery_fee' => $deliveryFee,
+    'total_amount' => $totalAmount,
+    'fulfillment_type' => $fulfillmentType,
+    'special_instructions' => $instructions,
+    'created_at' => date('Y-m-d H:i:s'),
+    'fulfillment_summary' => $fulfillmentSummary,
+];
 
-// Send notifications
-send_admin_notification("New Order #{$orderNumber} ({$fullName})", $emailBody, $email);
+$customerOrderPayload = [
+    'email' => $email,
+    'phone' => $phone,
+    'full_name' => $fullName,
+];
+
+$customerItems = array_map(function ($line) {
+    return [
+        'item_title' => $line['item_title'],
+        'quantity' => $line['quantity'],
+        'unit_price' => $line['unit_price'],
+        'line_total' => $line['line_total'],
+    ];
+}, $validatedItems);
+
+$sent = send_order_notification_email($orderRecord, $customerOrderPayload, $customerItems);
+if (!$sent) {
+    error_log('Order email notification failed for order ' . $orderNumber);
+}
 
 echo json_encode([
     'success' => true,
@@ -393,5 +361,15 @@ echo json_encode([
     'fulfillment_type' => $fulfillmentType,
     'total_amount' => $totalAmount,
     'customer_email' => $email,
-    'payment_id' => $squarePaymentId
+    'payment_id' => $squarePaymentId,
+    'order' => [
+        'order_number' => $orderNumber,
+        'subtotal' => $subtotal,
+        'delivery_fee' => $deliveryFee,
+        'total_amount' => $totalAmount,
+        'fulfillment_type' => $fulfillmentType,
+        'fulfillment_date' => $fulfillmentDate,
+        'fulfillment_time_slot' => $fulfillmentTime,
+        'delivery_summary' => $fulfillmentSummary,
+    ]
 ]);

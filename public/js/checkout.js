@@ -308,8 +308,13 @@ document.addEventListener("DOMContentLoaded", () => {
         square_nonce: paymentToken,
       }
 
+      const apiUrl = new URL(
+        "api/checkout.php",
+        window.location.href,
+      ).toString()
+
       try {
-        const response = await fetch("/api/checkout.php", {
+        const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
